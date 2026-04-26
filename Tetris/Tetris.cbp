@@ -11,6 +11,13 @@
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc-mingw64" />
+				<Compiler>
+					<Add directory="../GBT_v2026.1C.01/include" />
+				</Compiler>
+				<Linker>
+					<Add option="-lgbt" />
+					<Add directory="../GBT_v2026.1C.01/lib" />
+				</Linker>
 			</Target>
 			<Target title="Release">
 				<Option output="bin/Release/Tetris" prefix_auto="1" extension_auto="1" />
@@ -19,6 +26,10 @@
 				<Option compiler="gcc-mingw64" />
 			</Target>
 		</Build>
+		<Unit filename="funciones.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="funciones.h" />
 		<Unit filename="main.c">
 			<Option compilerVar="CC" />
 		</Unit>
