@@ -26,10 +26,18 @@
 				<Option compiler="gcc-mingw64" />
 			</Target>
 		</Build>
-		<Unit filename="funciones.c">
+		<Unit filename="graficos.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="funciones.h" />
+		<Unit filename="graficos.h" />
+		<Unit filename="input.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="input.h" />
+		<Unit filename="juego.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="juego.h" />
 		<Unit filename="main.c">
 			<Option compilerVar="CC" />
 		</Unit>
