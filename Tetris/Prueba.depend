@@ -1,0 +1,63 @@
+# depslib dependency file v1.0
+1777491675 source:h:\otros ordenadores\leo-pc\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\prueba\main.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<time.h>
+	<windows.h>
+	<conio.h>
+	"gbt.h"
+
+1776646998 h:\otros ordenadores\leo-pc\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\prueba\gbt.h
+	"gbt_entrada.h"
+	"gbt_graficos.h"
+	"gbt_logger.h"
+	"gbt_temporizador.h"
+	"gbt_vector.h"
+
+1776646998 h:\otros ordenadores\leo-pc\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\prueba\gbt_entrada.h
+	<stdint.h>
+
+1776646998 h:\otros ordenadores\leo-pc\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\prueba\gbt_graficos.h
+	<stdint.h>
+
+1776646998 h:\otros ordenadores\leo-pc\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\prueba\gbt_logger.h
+
+1776646998 h:\otros ordenadores\leo-pc\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\prueba\gbt_temporizador.h
+	<stdint.h>
+
+1776646998 h:\otros ordenadores\leo-pc\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\prueba\gbt_vector.h
+	<stdlib.h>
+	<stdint.h>
+
+1777514880 source:c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\prueba\main.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<time.h>
+	<windows.h>
+	<conio.h>
+	"gbt.h"
+
+1776646998 c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\prueba\gbt.h
+	"gbt_entrada.h"
+	"gbt_graficos.h"
+	"gbt_logger.h"
+	"gbt_temporizador.h"
+	"gbt_vector.h"
+
+1776646998 c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\prueba\gbt_entrada.h
+	<stdint.h>
+
+1776646998 c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\prueba\gbt_graficos.h
+	<stdint.h>
+
+1776646998 c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\prueba\gbt_logger.h
+
+1776646998 c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\prueba\gbt_temporizador.h
+	<stdint.h>
+
+1776646998 c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\prueba\gbt_vector.h
+	<stdlib.h>
+	<stdint.h>
+
