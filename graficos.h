@@ -12,7 +12,7 @@
 #define TAM_CELDA 8
 #define ANCHO_VENTANA 320
 #define ALTO_VENTANA 200
-#define ESCALA_VENTANA 2
+#define ESCALA_VENTANA 4
 #define OFFSET_X (ANCHO_VENTANA - columnas * TAM_CELDA) / 2
 #define OFFSET_Y (ALTO_VENTANA - filas * TAM_CELDA) / 2
 

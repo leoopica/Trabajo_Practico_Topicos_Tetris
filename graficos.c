@@ -18,49 +18,49 @@ int piezas [cantPiezas][4][4] =
     
     // Pieza L
     {
+        {0, 0, 0, 0},
         {0, 0, 1, 0},
         {1, 1, 1, 0},
-        {0, 0, 0, 0},
         {0, 0, 0, 0},
     },
 
     // Pieza J
     {
+        {0, 0, 0, 0},
         {0, 1, 0, 0},
         {0, 1, 1, 1},
-        {0, 0, 0, 0},
         {0, 0, 0, 0},
     },
 
     // Pieza O
     {
-        {0, 1, 1, 0},
-        {0, 1, 1, 0},
         {0, 0, 0, 0},
+        {0, 1, 1, 0},
+        {0, 1, 1, 0},
         {0, 0, 0, 0},
     },
 
     // Pieza S
     {
+        {0, 0, 0, 0},
         {0, 1, 1, 0},
         {1, 1, 0, 0},
-        {0, 0, 0, 0},
         {0, 0, 0, 0},
     },
 
     // Pieza T
     {
+        {0, 0, 0, 0},
         {0, 1, 0, 0},
         {1, 1, 1, 0},
-        {0, 0, 0, 0},
         {0, 0, 0, 0},
     },
 
     // Pieza Z
     {
+        {0, 0, 0, 0},
         {1, 1, 0, 0},
         {0, 1, 1, 0},
-        {0, 0, 0, 0},
         {0, 0, 0, 0},
     }
 };
@@ -257,6 +257,7 @@ void ROTARHORARIO ()
 {
     int temporal [4][4]; // Matriz temporal de pieza
     int i, j;
+    int kicks [5] = {0, -1, 1, -2, 2};
     for (i = 0; i < 4; i ++) // Recorre las filas de la matriz de la pieza
     {
         for (j = 0; j < 4; j ++) // Recorre las columnas de la matriz de la pieza
@@ -264,16 +265,22 @@ void ROTARHORARIO ()
             temporal [j][3 - i] = actual.forma [i][j]; // Rota la pieza 90º en sentido horario, y lo guarda en el temporal
         }
     }
-    if (COLISION (actual.fila, actual.columna, temporal) == 0) // Verifica si hay colisión al rotar la pieza
-    {
-        COPIARPIEZA (actual.forma, temporal); // Si no hay rotación, copia la forma de la pieza rotada a la actual
+    for (int k = 0; k < 5; k++) {
+        if (COLISION (actual.fila, actual.columna+kicks[k], temporal) == 0) // Verifica si hay colisión al rotar la pieza
+        {
+            actual.columna += kicks[k];
+            COPIARPIEZA (actual.forma, temporal); // Si no hay rotación, copia la forma de la pieza rotada a la actual
+            return;
+        }
     }
+
 }
 
 void ROTARANTIHORARIO ()
 {
     int temporal [4][4]; // Matriz temporal de pieza
     int i, j;
+    int kicks [5] = {0, -1, 1, -2, 2};
     for (i = 0; i < 4; i ++) // Recorre las filas de la matriz de la pieza
     {
         for (j = 0; j < 4; j ++) // Recorre las columnas de la matriz de la pieza
@@ -281,8 +288,12 @@ void ROTARANTIHORARIO ()
             temporal [3 - j][i] = actual.forma [i][j]; // Rota la pieza 90º en sentido horario, y lo guarda en el temporal
         }
     }
-    if (COLISION (actual.fila, actual.columna, temporal) == 0) // Verifica si hay colisión al rotar la pieza
-    {
-        COPIARPIEZA (actual.forma, temporal); // Si no hay rotación, copia la forma de la pieza rotada a la actual
+    for (int k = 0; k < 5; k++) { //Primero verifica si hay colision al rotar la pieza, si la hay aplica un "kick" y vuelve a verificar hasta que acaba el vector de kicks
+        if (COLISION (actual.fila, actual.columna+kicks[k], temporal) == 0) // Verifica si hay colisión al rotar la pieza desplazandola a la izquierda o derecha según el kick
+        {
+            actual.columna += kicks[k];
+            COPIARPIEZA (actual.forma, temporal); // Si no hay colision, copia la forma de la pieza rotada a la actual
+            return;
+        }
     }
 }

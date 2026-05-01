@@ -36,7 +36,7 @@ int main ()
 
     srand (time (0)); // Para randomizar
     NUEVAPIEZA (); // Obtiene pieza nueva
-    tGBT_Temporizador *timer_caida = gbt_temporizador_crear (0.3); // Temporizador para limitar la velocidad del juego
+    tGBT_Temporizador *timer_caida = gbt_temporizador_crear (0.6); // Temporizador para limitar la velocidad del juego
     if (!timer_caida)
     {
         fprintf (stderr, "Error al crear temporizador: %s\n", gbt_obtener_log()); // Si falla en la creación, lo indica
