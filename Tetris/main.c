@@ -14,12 +14,12 @@ PRUEBA DE TETRIS BÁSICO
 #define columnas 10 // Cantidad de columnas del tablero
 #define cantPiezas 7 // Cantidad de piezas
 #define CANT_COLORES 16 // Cantidad de colores
-#define ANCHO_VENTANA 128
-#define ALTO_VENTANA 128
-#define ESCALA_VENTANA 5
-#define TAM_CELDA 6 // Cuántos pixeles tiene cada bloque del tablero
-#define OFFSET_X 20 // Margen horizontal pantalla desde la izquierda
-#define OFFSET_Y 10 // Margen vertical pantalla desde arriba
+#define ANCHO_VENTANA 160
+#define ALTO_VENTANA 160
+#define ESCALA_VENTANA 4
+#define TAM_CELDA 8 // Cuántos pixeles tiene cada bloque del tablero
+#define OFFSET_X (ANCHO_VENTANA - columnas * TAM_CELDA) / 2 // Margen horizontal pantalla desde la izquierda
+#define OFFSET_Y (ALTO_VENTANA - filas * TAM_CELDA) / 2 // Margen vertical pantalla desde arriba
 
 
 // Definición del tablero
@@ -36,7 +36,7 @@ int piezas [cantPiezas][4][4] = // [Cantidad de piezas], [4 filas], [4 columnas]
         {0, 0, 0, 0},
     },
     
-    // Pieza J
+    // Pieza L
     {
         {0, 0, 1, 0},
         {1, 1, 1, 0},
@@ -44,10 +44,10 @@ int piezas [cantPiezas][4][4] = // [Cantidad de piezas], [4 filas], [4 columnas]
         {0, 0, 0, 0},
     },
 
-    // Pieza L
+    // Pieza J
     {
-        {1, 0, 0, 0},
-        {1, 1, 1, 0},
+        {0, 1, 0, 0},
+        {0, 1, 1, 1},
         {0, 0, 0, 0},
         {0, 0, 0, 0},
     },
@@ -86,8 +86,8 @@ int piezas [cantPiezas][4][4] = // [Cantidad de piezas], [4 filas], [4 columnas]
 };
 
 // Definición de colores
-tGBT_ColorRGB paletaCGA [CANT_COLORES] = {
-
+tGBT_ColorRGB paletaCGA [CANT_COLORES] =
+{
     /// 0-15: Colores CGA (16 colores)
     {0x00, 0x00, 0x00}, // 0:   Negro
     {0x00, 0x00, 0xAA}, // 1:   Azul
@@ -107,11 +107,52 @@ tGBT_ColorRGB paletaCGA [CANT_COLORES] = {
     {0xFF, 0xFF, 0xFF}  // 15:  Usado como transparente por GBT
 };
 
+int colorBrillo [CANT_COLORES] = // Brillo para cada color definido en paletaCGA
+{
+    0,
+    9,
+    10,
+    11,
+    12,
+    13,
+    15,
+    15,
+    7,
+    15,
+    15,
+    15,
+    15,
+    15,
+    15,
+    15
+};
+
+int colorSombra[CANT_COLORES] = // Sombra para cada color definido en paletaCGA
+{
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    4,
+    8,
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+};
+
 // Estructura para las piezas
 typedef struct
 {
     int forma [4][4]; // Forma de la pieza
     int fila, columna; // Coordenada de la pieza en el tablero
+    int color;
 } sPieza;
 
 sPieza actual; // Pieza actual cayendo
@@ -127,7 +168,7 @@ void ROTARANTIHORARIO ();
 
 int main ()
 {
-    char nombreVentana[128]; // Vector para el nombre de la ventana
+    char nombreVentana [128]; // Vector para el nombre de la ventana
     
     if (gbt_iniciar() != 0) // Iniciar la biblioteca GBT
     {
@@ -149,7 +190,6 @@ int main ()
         return -1;
     }
 
-    eGBT_Tecla tecla; // Define la variable tecla
     srand (time (0)); // Para randomizar
     NUEVAPIEZA (); // Obtiene pieza nueva
     tGBT_Temporizador *timer_caida = gbt_temporizador_crear (0.3); // Temporizador para limitar la velocidad del juego
@@ -170,7 +210,6 @@ int main ()
     while (corriendo) // Mientras esté funcionando
     {
         gbt_procesar_entrada (); // Procesa la entrada de teclas
-        tecla = gbt_obtener_tecla_presionada ();
         if (gbt_tecla_sostenida (GBTK_ESCAPE)) // Verifica input de la tecla Escape
         {
             corriendo = 0;
@@ -230,10 +269,12 @@ int main ()
 void NUEVAPIEZA ()
 {
     int tipo;
+    int colorPiezas [cantPiezas] = {11, 9, 6, 14, 10, 13, 12};
     tipo = rand () % cantPiezas; // Randomiza la pieza
     COPIARPIEZA (actual.forma, piezas [tipo]); // Busca la pieza en el catálogo de acuerdo al número randomizado en TIPO, y copia la forma de dicha pieza en la pieza actual
     actual.fila = 0; // Ubica la pieza en la fila 0 (arriba de todo)
     actual.columna = columnas / 2 - 2; // Ubica la pieza en la mitad horizontal del tablero
+    actual.color = colorPiezas [tipo]; // Pone el color
 }
 
 void COPIARPIEZA (int destino [4][4], int origen [4][4])
@@ -250,7 +291,7 @@ void COPIARPIEZA (int destino [4][4], int origen [4][4])
 
 void DIBUJAR ()
 {
-    int fTablero, cTablero, fPieza, cPieza, posXPantalla, posYPantalla, pixelXBloque, pixelYBloque, ocupado;
+    int fTablero, cTablero, fPieza, cPieza, posXPantalla, posYPantalla, pixelXBloque, pixelYBloque, ocupado = 0, colorBase, colorFinal;
 
     gbt_borrar_backbuffer (0); // Limpia pantalla (negro)
 
@@ -268,14 +309,15 @@ void DIBUJAR ()
                     {
                         if (actual.fila + fPieza == fTablero && actual.columna + cPieza == cTablero) // Verifica si el mino en cuestión está en cierta posición del tablero
                         {
-                            ocupado = 1;
+                            ocupado = actual.color;
                         }
                     }
                 }
             }
 
-            if (ocupado == 1) // Si está ocupado, lo dibuja
+            if (ocupado != 0) // Si está ocupado, lo dibuja
             {
+                colorBase = ocupado;
                 // Dibujar bloque
                 posXPantalla = OFFSET_X + cTablero * TAM_CELDA;
                 posYPantalla = OFFSET_Y + fTablero * TAM_CELDA;
@@ -284,7 +326,23 @@ void DIBUJAR ()
                 {
                     for (pixelXBloque = 0; pixelXBloque < TAM_CELDA; pixelXBloque ++)
                     {
-                        gbt_dibujar_pixel(posXPantalla + pixelXBloque, posYPantalla + pixelYBloque, 10); // color verde
+                        colorFinal = colorBase;
+
+                        // Pone brillo en la esquina superior izquierda (borde de 2 píxeles)
+                        if (pixelYBloque <= 1 || pixelXBloque <= 1)
+                        {
+                            colorFinal = colorBrillo[colorBase];
+                        }
+                        else 
+                        {
+                            // Pone sombra en esquina inferior derecha (borde de 2 píxeles)
+                            if (pixelYBloque >= TAM_CELDA - 2 || pixelXBloque >= TAM_CELDA - 2)
+                            {
+                                colorFinal = colorSombra[colorBase];
+                            }
+                        }
+
+                        gbt_dibujar_pixel(posXPantalla + pixelXBloque, posYPantalla + pixelYBloque, colorFinal);
                     }
                 }
             }
@@ -308,7 +366,7 @@ int COLISION (int filaNueva, int columnaNueva, int forma [4][4])
                     colisiona = 1;
                     return colisiona;
                 }
-                if (tablero [fTablero][cTablero] == 1) // Evalua colisión dentro del tablero, o sea, si hay un bloque ocupando dicho espacio
+                if (tablero [fTablero][cTablero]  != 0) // Evalua colisión dentro del tablero, o sea, si hay un bloque ocupando dicho espacio
                 {
                     colisiona = 1;
                     return colisiona;
@@ -328,7 +386,7 @@ void FIJARPIEZA ()
         {
             if (actual.forma [filaPieza][columnaPieza] == 1) // Verifica si en dicha posición de la matriz de la pieza hay o no un mino
             {
-                tablero [actual.fila + filaPieza][actual.columna + columnaPieza] = 1; // Si hay un mino, lo dibuja en el tablero
+                tablero [actual.fila + filaPieza][actual.columna + columnaPieza] = actual.color; // Si hay un mino, lo dibuja en el tablero
             }
         }
     }
