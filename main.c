@@ -24,11 +24,11 @@ int main ()
 
     if (gbt_crear_ventana (nombreVentana, ANCHO_VENTANA, ALTO_VENTANA, ESCALA_VENTANA) != 0) // Crea la ventana
     {
-        fprintf(stderr, "Error al iniciar el modulo de graficos de GBT: %s\n", gbt_obtener_log()); // Si falla en la creación, lo indica
+        fprintf (stderr, "Error al iniciar el modulo de graficos de GBT: %s\n", gbt_obtener_log()); // Si falla en la creación, lo indica
         return -1;
     }
 
-    if (gbt_aplicar_paleta(paletaCGA, CANT_COLORES, GBT_FORMATO_888) != 0) // Aplica la paleta de colores definida
+    if (gbt_aplicar_paleta (paletaCGA, CANT_COLORES, GBT_FORMATO_888) != 0) // Aplica la paleta de colores definida
     {
         fprintf (stderr, "Error al aplicar la nueva paleta de colores: %s\n", gbt_obtener_log()); // Si falla la aplicación de la paleta, lo indica
         return -1;
@@ -57,7 +57,7 @@ int main ()
         if (gbt_tecla_sostenida (GBTK_ESCAPE)) // Verifica input de la tecla Escape
         {
             corriendo = 0;
-            printf("Saliendo del juego\n");
+            printf ("Saliendo del juego\n");
         }
         else 
         {
@@ -98,14 +98,14 @@ int main ()
                     }
                 }
             }
-            DIBUJAR ();
-            gbt_volcar_backbuffer();
-            gbt_esperar(16);
+            DIBUJAR (); // Dibuja los gráficos
+            gbt_volcar_backbuffer (); // Vuelca los gráficos en la ventana 
+            gbt_esperar (16); // Espera 16 ms para evitar que el juego se vea demasiado rápido
         }
     }
-    gbt_destruir_ventana();
-    gbt_temporizador_destruir(timer_caida);
-    gbt_temporizador_destruir(timer_mov);
-    gbt_cerrar();
+    gbt_destruir_ventana (); // Destruye la ventana creada
+    gbt_temporizador_destruir (timer_caida); // Destruye el temporizador de la caída
+    gbt_temporizador_destruir (timer_mov); // Destruye el temporizador del movimiento de las piezas
+    gbt_cerrar (); // Cierra la biblioteca GBT
     return 0;
 }

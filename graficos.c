@@ -1,100 +1,41 @@
 #include "graficos.h"
+#include "sprites.c"
 #include <stdlib.h>
 #include <time.h>
 
 // Definición del tablero
 int tablero [filas][columnas] = {0};
 
-// Definición de las formas de las piezas 
-int piezas [cantPiezas][4][4] =
-{
-    // Pieza I
-    {
-        {0, 0, 0, 0},
-        {1, 1, 1, 1},
-        {0, 0, 0, 0},
-        {0, 0, 0, 0},
-    },
-    
-    // Pieza L
-    {
-        {0, 0, 1, 0},
-        {1, 1, 1, 0},
-        {0, 0, 0, 0},
-        {0, 0, 0, 0},
-    },
-
-    // Pieza J
-    {
-        {0, 1, 0, 0},
-        {0, 1, 1, 1},
-        {0, 0, 0, 0},
-        {0, 0, 0, 0},
-    },
-
-    // Pieza O
-    {
-        {0, 1, 1, 0},
-        {0, 1, 1, 0},
-        {0, 0, 0, 0},
-        {0, 0, 0, 0},
-    },
-
-    // Pieza S
-    {
-        {0, 1, 1, 0},
-        {1, 1, 0, 0},
-        {0, 0, 0, 0},
-        {0, 0, 0, 0},
-    },
-
-    // Pieza T
-    {
-        {0, 1, 0, 0},
-        {1, 1, 1, 0},
-        {0, 0, 0, 0},
-        {0, 0, 0, 0},
-    },
-
-    // Pieza Z
-    {
-        {1, 1, 0, 0},
-        {0, 1, 1, 0},
-        {0, 0, 0, 0},
-        {0, 0, 0, 0},
-    }
-};
-
-// Paleta
+// Paleta de colores
 tGBT_ColorRGB paletaCGA [CANT_COLORES] =
 {
-    {0x00, 0x00, 0x00},
-    {0x00, 0x00, 0xAA},
-    {0x00, 0xAA, 0x00},
-    {0x00, 0xAA, 0xAA},
-    {0xAA, 0x00, 0x00},
-    {0xAA, 0x00, 0xAA},
-    {0xAA, 0x55, 0x00},
-    {0xAA, 0xAA, 0xAA},
-    {0x55, 0x55, 0x55},
-    {0x55, 0x55, 0xFF},
-    {0x55, 0xFF, 0x55},
-    {0x55, 0xFF, 0xFF},
-    {0xFF, 0x55, 0x55},
-    {0xFF, 0x55, 0xFF},
-    {0xFF, 0xFF, 0x55},
-    {0xFF, 0xFF, 0xFF}
+    {0x00, 0x00, 0x00}, // 0:   Negro
+    {0x00, 0x00, 0xAA}, // 1:   Azul
+    {0x00, 0xAA, 0x00}, // 2:   Verde
+    {0x00, 0xAA, 0xAA}, // 3:   Cian
+    {0xAA, 0x00, 0x00}, // 4:   Rojo
+    {0xAA, 0x00, 0xAA}, // 5:   Magenta
+    {0xAA, 0x55, 0x00}, // 6:   Marron
+    {0xAA, 0xAA, 0xAA}, // 7:   Gris claro
+    {0x55, 0x55, 0x55}, // 8:   Gris oscuro
+    {0x55, 0x55, 0xFF}, // 9:   Azul brillante
+    {0x55, 0xFF, 0x55}, // 10:  Verde brillante
+    {0x55, 0xFF, 0xFF}, // 11:  Cian brillante
+    {0xFF, 0x55, 0x55}, // 12:  Rojo brillante
+    {0xFF, 0x55, 0xFF}, // 13:  Magenta brillante
+    {0xFF, 0xFF, 0x55}, // 14:  Amarillo
+    {0xFF, 0xFF, 0xFF}  // 15:  Usado como transparente por GBT
 };
 
-int colorBrillo [CANT_COLORES] = {0,9,10,11,12,13,15,15,7,15,15,15,15,15,15,15};
-int colorSombra [CANT_COLORES] = {0,1,2,3,4,5,4,8,0,1,2,3,4,5,6,7};
+int colorBrillo [CANT_COLORES] = {0,9,10,11,12,13,15,15,7,15,15,15,15,15,15,15}; // Paleta de colores para la parte de brillo
+int colorSombra [CANT_COLORES] = {0,1,2,3,4,5,4,8,0,1,2,3,4,5,6,7}; // Paleta de colores para la parte de sombra
 
 sPieza actual;
 
 void NUEVAPIEZA ()
 {
-    int tipo;
-    int colorPiezas [cantPiezas] = {11, 9, 6, 14, 10, 13, 12};
+    int tipo; // Pieza que va a salir
+    int colorPiezas [cantPiezas] = {11, 9, 6, 14, 10, 13, 12}; // Asigna un color a cada pieza
     tipo = rand () % cantPiezas; // Randomiza la pieza
     COPIARPIEZA (actual.forma, piezas [tipo]); // Busca la pieza en el catálogo de acuerdo al número randomizado en TIPO, y copia la forma de dicha pieza en la pieza actual
     actual.fila = 0; // Ubica la pieza en la fila 0 (arriba de todo)
@@ -116,9 +57,16 @@ void COPIARPIEZA (int destino [4][4], int origen [4][4])
 
 void DIBUJAR ()
 {
-    int fTablero, cTablero, fPieza, cPieza, posXPantalla, posYPantalla, pixelXBloque, pixelYBloque, ocupado = 0, colorBase, colorFinal;
+    int fTablero, cTablero, fPieza, cPieza; // Filas y columnas de tablero y de matriz de pieza
+    int posXPantalla, posYPantalla; // Posición horizontal y vertical
+    int pixelXBloque, pixelYBloque; // Pixel horizontal y vertical de la pieza
+    int ocupado = 0, colorBase, colorFinal; // Ubicación ocupada, color original del bloque, color que va a dibujarse en el pixel
 
     gbt_borrar_backbuffer (0); // Limpia pantalla (negro)
+
+    DIBUJARFONDO ();
+    DIBUJARMARCO ();
+    DIBUJARGRILLA ();
 
     for (fTablero = 0; fTablero < filas; fTablero ++) // Recorre filas del tablero
     {
@@ -134,7 +82,7 @@ void DIBUJAR ()
                     {
                         if (actual.fila + fPieza == fTablero && actual.columna + cPieza == cTablero) // Verifica si el mino en cuestión está en cierta posición del tablero
                         {
-                            ocupado = actual.color;
+                            ocupado = actual.color; // Indica que está ocupado por la pieza
                         }
                     }
                 }
@@ -142,32 +90,30 @@ void DIBUJAR ()
 
             if (ocupado != 0) // Si está ocupado, lo dibuja
             {
-                colorBase = ocupado;
+                colorBase = ocupado; // Guarda el color base de la pieza a dibujar
                 // Dibujar bloque
-                posXPantalla = OFFSET_X + cTablero * TAM_CELDA;
-                posYPantalla = OFFSET_Y + fTablero * TAM_CELDA;
+                posXPantalla = OFFSET_X + cTablero * TAM_CELDA -1; // Convierte coordenadas horizontales del tablero en coordenadas en pantalla
+                posYPantalla = OFFSET_Y + fTablero * TAM_CELDA -1; // Convierte coordenadas verticales del tablero en coordenadas en pantalla
 
-                for (pixelYBloque = 0; pixelYBloque < TAM_CELDA; pixelYBloque ++)
+                for (pixelYBloque = 0; pixelYBloque <= TAM_CELDA; pixelYBloque ++) // Recorre filas de píxeles dentro del bloque
                 {
-                    for (pixelXBloque = 0; pixelXBloque < TAM_CELDA; pixelXBloque ++)
+                    for (pixelXBloque = 0; pixelXBloque <= TAM_CELDA; pixelXBloque ++) // Recorre columnas de píxeles dentro del bloque
                     {
-                        colorFinal = colorBase;
-
-                        // Pone brillo en la esquina superior izquierda (borde de 2 píxeles)
-                        if (pixelYBloque <= 1 || pixelXBloque <= 1)
+                        colorFinal = colorBase; // Pone el pixel en el color de la base
+                        
+                        if (pixelYBloque <= 1 || pixelXBloque <= 1) // Verifica la posición del pixel para ver si está en la esquina superior izquierda
                         {
-                            colorFinal = colorBrillo[colorBase];
+                            colorFinal = colorBrillo [colorBase]; // Pone brillo en la esquina superior izquierda (borde de 2 píxeles)
                         }
                         else 
                         {
-                            // Pone sombra en esquina inferior derecha (borde de 2 píxeles)
-                            if (pixelYBloque >= TAM_CELDA - 2 || pixelXBloque >= TAM_CELDA - 2)
+                            if (pixelYBloque >= TAM_CELDA - 2 || pixelXBloque >= TAM_CELDA - 2) // Verifica la posición del pixel para ver si está en la esquina inferior derecha
                             {
-                                colorFinal = colorSombra[colorBase];
+                                colorFinal = colorSombra [colorBase]; // Pone sombra en esquina inferior derecha (borde de 2 píxeles)
                             }
                         }
 
-                        gbt_dibujar_pixel(posXPantalla + pixelXBloque, posYPantalla + pixelYBloque, colorFinal);
+                        gbt_dibujar_pixel(posXPantalla + pixelXBloque, posYPantalla + pixelYBloque, colorFinal); // Dibuja el pixel en cuestión en la posición correspondiente
                     }
                 }
             }
@@ -286,3 +232,81 @@ void ROTARANTIHORARIO ()
         COPIARPIEZA (actual.forma, temporal); // Si no hay rotación, copia la forma de la pieza rotada a la actual
     }
 }
+
+void DIBUJARFONDO ()
+{
+   int x, y; // Horizontal, vertical
+   int color; // Variable color
+
+    for (y = 0; y < ALTO_VENTANA; y ++) // Recorre verticalmente la ventana
+    {
+        for (x = 0; x < ANCHO_VENTANA; x ++) // Recorre horizontalmente la ventana
+        {
+            color = 1; // Define el color del fondo como azul oscuro
+
+            if ((x % 16 == 0) || (y % 16 == 0)) // Genera la cuadrícula en color gris
+            {
+                color = 8;
+            }
+            gbt_dibujar_pixel(x, y, color); // Dibuja
+        }
+    } 
+}
+
+void DIBUJARMARCO ()
+{
+    int x, y; // Horizontal, vertical
+    int x0, y0; // Esquina superior izquierda del marco
+    int ancho, alto; // Ancho y alto del marco
+    x0 = OFFSET_X - 4; // Agranda el marco horizontalmente hacia afuera del tablero
+    y0 = OFFSET_Y - 4; // Agranda el marco verticalmente hacia afuera del tablero
+    ancho = columnas * TAM_CELDA + 8; // Calcula el ancho del marco en pixeles de acuerdo a la cantidad de columnas del tablero. Agrega 8 por el borde
+    alto  = filas * TAM_CELDA + 8; // Calcula el alto del marco en pixeles de acuerdo a la cantidad de columnas del tablero. Agrega 8 por el borde
+    int color;
+    for (y = y0; y < y0 + alto; y ++) // Recorre horizontalmente el marco
+    {
+        for (x = x0; x < x0 + ancho; x ++) // Recorre verticalmente el marco
+        {
+            color = 0; // Fondo gris
+
+            if (y <= y0 + 1 || x <= x0 + 1) // Evalúa si el pixel en cuestión está arriba o a la izquierda para ponerle brillo al marco
+                {
+                    color = 7; // Brillo
+                }
+
+            if (y >= y0 + alto - 2 || x >= x0 + ancho - 2) // Evalúa si el pixel en cuestión está abajo o a la derecha para ponerle sombra al marco
+                {
+                    color = 8; // Sombra
+                }
+
+            gbt_dibujar_pixel(x, y, color); // Dibuja el pixel
+        }
+    }
+}
+
+void DIBUJARGRILLA ()
+{
+    int fila, columna;
+    int x, y;
+
+    for (fila = 0; fila <= filas; fila ++) // Líneas horizontales
+    {
+        y = OFFSET_Y + fila * TAM_CELDA;
+
+        for (x = OFFSET_X; x <= OFFSET_X + columnas * TAM_CELDA; x ++)
+        {
+            gbt_dibujar_pixel(x, y, 8); // gris oscuro
+        }
+    }
+
+    for (columna = 0; columna <= columnas; columna ++) // Líneas verticales
+    {
+        x = OFFSET_X + columna * TAM_CELDA;
+
+        for (y = OFFSET_Y; y <= OFFSET_Y + filas * TAM_CELDA; y ++)
+        {
+            gbt_dibujar_pixel(x, y, 8); // gris oscuro
+        }
+    }
+}
+

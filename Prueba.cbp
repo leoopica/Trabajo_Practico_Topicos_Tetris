@@ -41,8 +41,14 @@
 		<Unit filename="gbt_logger.h" />
 		<Unit filename="gbt_temporizador.h" />
 		<Unit filename="gbt_vector.h" />
+		<Unit filename="graficos.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Unit filename="graficos.h" />
 		<Unit filename="main.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="sprites.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Extensions>

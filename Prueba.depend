@@ -132,3 +132,43 @@
 	<stdio.h>
 	"gbt.h"
 
+1777755597 source:c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\tp_topicos_2026_1c_lunes_galaxia\trabajo_practico_topicos_tetris\graficos.c
+	"graficos.h"
+	<stdlib.h>
+	<time.h>
+
+1777754776 c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\tp_topicos_2026_1c_lunes_galaxia\trabajo_practico_topicos_tetris\graficos.h
+	<stdio.h>
+	"gbt.h"
+
+1776646998 c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\tp_topicos_2026_1c_lunes_galaxia\trabajo_practico_topicos_tetris\gbt.h
+	"gbt_entrada.h"
+	"gbt_graficos.h"
+	"gbt_logger.h"
+	"gbt_temporizador.h"
+	"gbt_vector.h"
+
+1776646998 c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\tp_topicos_2026_1c_lunes_galaxia\trabajo_practico_topicos_tetris\gbt_entrada.h
+	<stdint.h>
+
+1776646998 c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\tp_topicos_2026_1c_lunes_galaxia\trabajo_practico_topicos_tetris\gbt_graficos.h
+	<stdint.h>
+
+1776646998 c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\tp_topicos_2026_1c_lunes_galaxia\trabajo_practico_topicos_tetris\gbt_logger.h
+
+1776646998 c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\tp_topicos_2026_1c_lunes_galaxia\trabajo_practico_topicos_tetris\gbt_temporizador.h
+	<stdint.h>
+
+1776646998 c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\tp_topicos_2026_1c_lunes_galaxia\trabajo_practico_topicos_tetris\gbt_vector.h
+	<stdlib.h>
+	<stdint.h>
+
+1777680728 source:c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\tp_topicos_2026_1c_lunes_galaxia\trabajo_practico_topicos_tetris\main.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<time.h>
+	<windows.h>
+	<conio.h>
+	"graficos.h"
+
