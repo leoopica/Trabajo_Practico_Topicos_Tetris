@@ -521,3 +521,8 @@ dkms.conf
 # debug information files
 *.dwo
 
+# Varios
+bin/
+obj/
+*.layout
+*.depend
