@@ -1,10 +1,10 @@
 #include "sprites.h"
 #include <stdlib.h>
 
-// Definición de las formas de las piezas 
+// Definición de las formas de las piezas según SRS
 int piezas [cantPiezas][4][4] =
 {
-    // Pieza I
+    // Pieza I (Tipo 0) - SRS Initial: 0, 0, 0, 0 / 1, 1, 1, 1 / 0, 0, 0, 0 / 0, 0, 0, 0
     {
         {0, 0, 0, 0},
         {1, 1, 1, 1},
@@ -12,7 +12,15 @@ int piezas [cantPiezas][4][4] =
         {0, 0, 0, 0},
     },
     
-    // Pieza L
+    // Pieza J (Tipo 1)
+    {
+        {1, 0, 0, 0},
+        {1, 1, 1, 0},
+        {0, 0, 0, 0},
+        {0, 0, 0, 0},
+    },
+
+    // Pieza L (Tipo 2)
     {
         {0, 0, 1, 0},
         {1, 1, 1, 0},
@@ -20,15 +28,7 @@ int piezas [cantPiezas][4][4] =
         {0, 0, 0, 0},
     },
 
-    // Pieza J
-    {
-        {0, 1, 0, 0},
-        {0, 1, 1, 1},
-        {0, 0, 0, 0},
-        {0, 0, 0, 0},
-    },
-
-    // Pieza O
+    // Pieza O (Tipo 3)
     {
         {0, 1, 1, 0},
         {0, 1, 1, 0},
@@ -36,7 +36,7 @@ int piezas [cantPiezas][4][4] =
         {0, 0, 0, 0},
     },
 
-    // Pieza S
+    // Pieza S (Tipo 4)
     {
         {0, 1, 1, 0},
         {1, 1, 0, 0},
@@ -44,7 +44,7 @@ int piezas [cantPiezas][4][4] =
         {0, 0, 0, 0},
     },
 
-    // Pieza T
+    // Pieza T (Tipo 5)
     {
         {0, 1, 0, 0},
         {1, 1, 1, 0},
@@ -52,7 +52,7 @@ int piezas [cantPiezas][4][4] =
         {0, 0, 0, 0},
     },
 
-    // Pieza Z
+    // Pieza Z (Tipo 6)
     {
         {1, 1, 0, 0},
         {0, 1, 1, 0},
