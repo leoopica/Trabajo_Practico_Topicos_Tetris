@@ -32,6 +32,7 @@ extern tGBT_ColorRGB paletaCGA [cantColores]; // Define paleta de colores
 extern int colorBrillo [cantColores]; // Define colores para la parte de brillo de las piezas
 extern int colorSombra [cantColores]; // Define colores para la parte de sombra de las piezas
 extern sPieza actual;
+extern sPieza proxima;
 extern int puntaje;
 extern int nivel;
 extern int lineas_totales;
@@ -63,6 +64,7 @@ void DIBUJARMARCOGENERICO (int x0, int y0, int ancho, int alto, int colorFondo);
 void DIBUJARGRILLA (); // Dibuja la grilla del tablero
 void DIBUJARCARACTER (int posXPantalla, int posYPantalla, int caracter, int anchoCaracter, int color); // PONER COMENTARIOS
 void DIBUJARTEXTO (int posXPantalla, int posYPantalla, char *texto, int anchoCaracter); // PONER COMENTARIOS
+void DIBUJARPROXIMA (); // Dibuja la pieza siguiente
 void DIBUJARPUNTAJE (); // PONER COMENTARIOS
 void DIBUJARTITULO (); // PONER COMENTARIOS
 void DIBUJARPAUSA ();

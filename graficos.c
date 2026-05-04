@@ -41,18 +41,58 @@ eEstadoJuego estado_juego = ESTADO_RUNNING;
 char nombreJugador [21]; // HAY QUE CAMBIARLO, PROBABLEMENTE
 
 sPieza actual;
+sPieza proxima;
+
+// Sistema de 7-bag
+int bolsa [7];
+int bolsaIndice = 7; // Forzamos llenado inicial
+
+void LLENARBOLSA ()
+{
+    int i, j, temp;
+    for (i = 0; i < 7; i++) bolsa[i] = i;
+    for (i = 6; i > 0; i--)
+    {
+        j = rand() % (i + 1);
+        temp = bolsa[i];
+        bolsa[i] = bolsa[j];
+        bolsa[j] = temp;
+    }
+    bolsaIndice = 0;
+}
+
+int OBTENERPIEZABOLSA ()
+{
+    if (bolsaIndice >= 7) LLENARBOLSA();
+    return bolsa[bolsaIndice++];
+}
+
+void CONFIGURARPIEZA (sPieza *p, int tipo)
+{
+    int colorPiezas [cantPiezas] = {11, 9, 6, 14, 10, 13, 12};
+    p->tipo = tipo;
+    p->rotacion = 0;
+    COPIARPIEZA (p->forma, piezas [tipo]);
+    p->fila = 0;
+    p->columna = columnasTablero / 2 - 2;
+    p->color = colorPiezas [tipo];
+}
 
 void NUEVAPIEZA ()
 {
-    int tipo; // Pieza que va a salir
-    int colorPiezas [cantPiezas] = {11, 9, 6, 14, 10, 13, 12}; // Asigna un color a cada pieza
-    tipo = rand () % cantPiezas; // Randomiza la pieza
-    actual.tipo = tipo;
-    actual.rotacion = 0;
-    COPIARPIEZA (actual.forma, piezas [tipo]); // Busca la pieza en el catálogo de acuerdo al número randomizado en TIPO, y copia la forma de dicha pieza en la pieza actual
-    actual.fila = 0;
-    actual.columna = columnasTablero / 2 - 2; // Ubica la pieza en la mitad horizontal del tablero
-    actual.color = colorPiezas [tipo]; // Pone el color
+    static int primeraVez = 1;
+
+    if (primeraVez)
+    {
+        CONFIGURARPIEZA(&actual, OBTENERPIEZABOLSA());
+        CONFIGURARPIEZA(&proxima, OBTENERPIEZABOLSA());
+        primeraVez = 0;
+    }
+    else
+    {
+        actual = proxima;
+        CONFIGURARPIEZA(&proxima, OBTENERPIEZABOLSA());
+    }
 
     piezas_caidas ++;
     if (piezas_caidas > 1 && (piezas_caidas - 1) % 10 == 0)
@@ -80,7 +120,9 @@ void REINICIARJUEGO ()
     piezas_caidas = 0;
     duracion_caida = 1.0;
     estado_juego = ESTADO_RUNNING;
-    NUEVAPIEZA();
+    bolsaIndice = 7; // Forzar llenado de bolsa
+    CONFIGURARPIEZA(&actual, OBTENERPIEZABOLSA());
+    CONFIGURARPIEZA(&proxima, OBTENERPIEZABOLSA());
 }
 
 void COPIARPIEZA (int destino [4][4], int origen [4][4])
@@ -108,6 +150,7 @@ void DIBUJAR ()
     DIBUJARMARCO ();
     DIBUJARGRILLA ();
     DIBUJARPUNTAJE ();
+    DIBUJARPROXIMA ();
     DIBUJARTEXTO(offsetHorizontal + columnasTablero * tamMino + tamMino, offsetVertical + filasTablero * tamMino - 20 - 10, "PLAYER ", anchoCaracter8); // MODIFICAR PARA QUE SEA MÁS SIMPLE?
     DIBUJARTEXTO(offsetHorizontal + columnasTablero * tamMino + tamMino, offsetVertical + filasTablero * tamMino - 20, nombreJugador, anchoCaracter8); // MODIFICAR PARA QUE SEA MÁS SIMPLE?
 
@@ -467,6 +510,42 @@ void DIBUJARTEXTO (int posXPantalla, int posYPantalla, char *texto, int anchoCar
         }
         if (caracter != -1) DIBUJARCARACTER (posXPantalla + i * anchoCaracter, posYPantalla, caracter, anchoCaracter, 7);
         i++ ;
+    }
+}
+
+void DIBUJARPROXIMA ()
+{
+    int f, c, px, py, x0, y0;
+    int colorBase, colorFinal, pixelX, pixelY;
+
+    x0 = offsetHorizontal - 80;
+    y0 = offsetVertical;
+
+    DIBUJARTEXTO(x0, y0, "NEXT", anchoCaracter8);
+
+    // Dibujar miniatura de la próxima pieza
+    for (f = 0; f < 4; f++)
+    {
+        for (c = 0; c < 4; c++)
+        {
+            if (proxima.forma[f][c] == 1)
+            {
+                colorBase = proxima.color;
+                px = x0 + c * tamMino;
+                py = y0 + 15 + f * tamMino;
+
+                for (pixelY = 0; pixelY <= tamMino; pixelY++)
+                {
+                    for (pixelX = 0; pixelX <= tamMino; pixelX++)
+                    {
+                        colorFinal = colorBase;
+                        if (pixelY <= 1 || pixelX <= 1) colorFinal = colorBrillo[colorBase];
+                        else if (pixelY >= tamMino - 2 || pixelX >= tamMino - 2) colorFinal = colorSombra[colorBase];
+                        gbt_dibujar_pixel(px + pixelX, py + pixelY, colorFinal);
+                    }
+                }
+            }
+        }
     }
 }
 
