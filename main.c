@@ -38,7 +38,8 @@ int main ()
     DIBUJARINICIO (nombreJugador);
     srand (time (0)); // Para randomizar
     NUEVAPIEZA (); // Obtiene pieza nueva
-    tGBT_Temporizador *timer_caida = gbt_temporizador_crear (0.3); // Temporizador para limitar la velocidad del juego
+    double duracion_actual = duracion_caida;
+    tGBT_Temporizador *timer_caida = gbt_temporizador_crear (duracion_actual); // Temporizador para limitar la velocidad del juego
     if (!timer_caida)
     {
         fprintf (stderr, "Error al crear temporizador: %s\n", gbt_obtener_log()); // Si falla en la creación, lo indica
@@ -50,6 +51,7 @@ int main ()
         fprintf (stderr, "Error al crear temporizador: %s\n", gbt_obtener_log()); // Si falla en la creación, lo indica
         return -1;
     }
+    tGBT_Temporizador *timer_fijacion = NULL;
 
     uint8_t corriendo = 1; // Define el estado corriendo
 
@@ -84,19 +86,50 @@ int main ()
                 if (gbt_tecla_sostenida (GBTK_ABAJO) && !COLISION (actual.fila + 1, actual.columna, actual.forma)) // Verifica input de flecha abajo y colisión
                 {
                     actual.fila ++;
+                    int multiplicador = (nivel / 2) + 1;
+                    if (multiplicador > 5) multiplicador = 5;
+
+                    int bonus_velocidad = (int)((1.0 - duracion_caida) * 10);
+                    if (bonus_velocidad < 0) bonus_velocidad = 0;
+
+                    puntaje += multiplicador + bonus_velocidad;
                 }
 
-                if (gbt_temporizador_consumir (timer_caida))
+                if (COLISION (actual.fila + 1, actual.columna, actual.forma)) // Verifica si la pieza está en el suelo
                 {
-                    if (!COLISION (actual.fila + 1, actual.columna, actual.forma)) // Verifica colisión para caída automática
+                    if (timer_fijacion == NULL)
                     {
-                        actual.fila ++; // Baja la pieza una fila si no hubo colisión
+                        timer_fijacion = gbt_temporizador_crear (duracion_caida * 2.0); // 50% de velocidad = 200% de duración
                     }
-                    else
+
+                    if (gbt_temporizador_consumir (timer_fijacion))
                     {
-                        FIJARPIEZA (); // Si hubo colisión, fija la pieza
+                        FIJARPIEZA (); // Fija la pieza
                         LIMPIARLINEAS (); // Si se completó una fila, la limpia
                         NUEVAPIEZA (); // Obtiene nueva pieza
+                        gbt_temporizador_destruir (timer_fijacion);
+                        timer_fijacion = NULL;
+
+                        // Si la duración cambió en NUEVAPIEZA, recrear el temporizador de caída
+                        if (duracion_actual != duracion_caida)
+                        {
+                            gbt_temporizador_destruir (timer_caida);
+                            timer_caida = gbt_temporizador_crear (duracion_caida);
+                            duracion_actual = duracion_caida;
+                        }
+                    }
+                }
+                else
+                {
+                    if (timer_fijacion != NULL)
+                    {
+                        gbt_temporizador_destruir (timer_fijacion);
+                        timer_fijacion = NULL;
+                    }
+
+                    if (gbt_temporizador_consumir (timer_caida))
+                    {
+                        actual.fila ++; // Baja la pieza una fila si no hubo colisión
                     }
                 }
             }
@@ -108,6 +141,7 @@ int main ()
     gbt_destruir_ventana (); // Destruye la ventana creada
     gbt_temporizador_destruir (timer_caida); // Destruye el temporizador de la caída
     gbt_temporizador_destruir (timer_mov); // Destruye el temporizador del movimiento de las piezas
+    if (timer_fijacion) gbt_temporizador_destruir(timer_fijacion);
     gbt_cerrar (); // Cierra la biblioteca GBT
     return 0;
 }

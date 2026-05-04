@@ -30,7 +30,11 @@ tGBT_ColorRGB paletaCGA [cantColores] =
 int colorBrillo [cantColores] = {0,9,10,11,12,13,15,15,7,15,15,15,15,15,15,15}; // Paleta de colores para la parte de brillo
 int colorSombra [cantColores] = {0,1,2,3,4,5,4,8,0,1,2,3,4,5,6,7}; // Paleta de colores para la parte de sombra
 
-int puntaje = 9870; // HAY QUE SACARLO DE ACÁ. SÓLO ESTÁ ACÁ PARA PROBAR COSAS
+int puntaje = 0;
+int nivel = 1;
+int lineas_totales = 0;
+int piezas_caidas = 0;
+double duracion_caida = 1.0;
 
 char nombreJugador [21]; // HAY QUE CAMBIARLO, PROBABLEMENTE
 
@@ -45,6 +49,12 @@ void NUEVAPIEZA ()
     actual.fila = 0; // Ubica la pieza en la fila 0 (arriba de todo)
     actual.columna = columnasTablero / 2 - 2; // Ubica la pieza en la mitad horizontal del tablero
     actual.color = colorPiezas [tipo]; // Pone el color
+
+    piezas_caidas ++;
+    if (piezas_caidas > 1 && (piezas_caidas - 1) % 10 == 0)
+    {
+        duracion_caida /= 1.03;
+    }
 }
 
 void COPIARPIEZA (int destino [4][4], int origen [4][4])
@@ -71,8 +81,8 @@ void DIBUJAR ()
     DIBUJARFONDO ();
     DIBUJARMARCO ();
     DIBUJARGRILLA ();
-    DIBUJARPUNTAJE (puntaje);
-    DIBUJARTEXTO(offsetHorizontal + columnasTablero * tamMino + tamMino, offsetVertical + filasTablero * tamMino - 20 - 10, "JUGADOR ", anchoCaracter8); // MODIFICAR PARA QUE SEA MÁS SIMPLE?
+    DIBUJARPUNTAJE ();
+    DIBUJARTEXTO(offsetHorizontal + columnasTablero * tamMino + tamMino, offsetVertical + filasTablero * tamMino - 20 - 10, "PLAYER ", anchoCaracter8); // MODIFICAR PARA QUE SEA MÁS SIMPLE?
     DIBUJARTEXTO(offsetHorizontal + columnasTablero * tamMino + tamMino, offsetVertical + filasTablero * tamMino - 20, nombreJugador, anchoCaracter8); // MODIFICAR PARA QUE SEA MÁS SIMPLE?
 
     for (fTablero = 0; fTablero < filasTablero; fTablero ++) // Recorre filasTablero del tablero
@@ -173,6 +183,7 @@ void FIJARPIEZA ()
 void LIMPIARLINEAS ()
 {
     int fila, columna, filaAux, llena;
+    int lineas_en_esta_ronda = 0;
 
     for (fila = filasTablero - 1; fila >= 0; fila --) // Recorre las filasTablero del tablero, desde abajo hasta arriba
     {
@@ -188,6 +199,7 @@ void LIMPIARLINEAS ()
 
         if (llena == 1) // Evalúa si llena quedó en 1. Si quedó en 1, significa que toda la fila está llena
         {
+            lineas_en_esta_ronda ++;
             for (filaAux = fila; filaAux > 0; filaAux --) // Recorre desde la fila llena hacia arriba
             {
                 for (columna = 0; columna < columnasTablero; columna ++) // Recorre las columnasTablero
@@ -203,6 +215,28 @@ void LIMPIARLINEAS ()
 
             fila ++; // Vuelve a evaluar la misma fila, porque bajó una nueva
         }
+    }
+
+    if (lineas_en_esta_ronda > 0)
+    {
+        int multiplicador = (nivel / 2) + 1;
+        if (multiplicador > 5)
+        {
+            multiplicador = 5;
+        }
+
+        int puntos_base = 0;
+        if (lineas_en_esta_ronda == 1) puntos_base = 100;
+        else if (lineas_en_esta_ronda == 2) puntos_base = 400;
+        else if (lineas_en_esta_ronda == 3) puntos_base = 900;
+        else if (lineas_en_esta_ronda >= 4) puntos_base = 2000;
+
+        int bonus_velocidad = (int)((1.0 - duracion_caida) * 500);
+        if (bonus_velocidad < 0) bonus_velocidad = 0;
+
+        puntaje += (puntos_base * multiplicador) + (bonus_velocidad * lineas_en_esta_ronda);
+        lineas_totales += lineas_en_esta_ronda;
+        nivel = (lineas_totales / 10) + 1;
     }
 }
 
@@ -364,11 +398,18 @@ void DIBUJARTEXTO (int posXPantalla, int posYPantalla, char *texto, int anchoCar
     }
 }
 
-void DIBUJARPUNTAJE (int puntaje) // PONER COMENTARIOS
+void DIBUJARPUNTAJE () // PONER COMENTARIOS
 {
     char textoPuntaje [20];
     sprintf (textoPuntaje, "SCORE %d", puntaje);
     DIBUJARTEXTO (offsetHorizontal + columnasTablero * tamMino + tamMino, offsetVertical, textoPuntaje, anchoCaracter8);
+
+    sprintf (textoPuntaje, "LEVEL %d", nivel);
+    DIBUJARTEXTO (offsetHorizontal + columnasTablero * tamMino + tamMino, offsetVertical + 20, textoPuntaje, anchoCaracter8);
+
+    sprintf (textoPuntaje, "LINES %d", lineas_totales);
+    DIBUJARTEXTO (offsetHorizontal + columnasTablero * tamMino + tamMino, offsetVertical + 40, textoPuntaje, anchoCaracter8);
+
 }
 
 void DIBUJARTITULO () // PONER COMENTARIOS

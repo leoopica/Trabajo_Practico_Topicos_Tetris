@@ -30,6 +30,11 @@ extern tGBT_ColorRGB paletaCGA [cantColores]; // Define paleta de colores
 extern int colorBrillo [cantColores]; // Define colores para la parte de brillo de las piezas
 extern int colorSombra [cantColores]; // Define colores para la parte de sombra de las piezas
 extern sPieza actual;
+extern int puntaje;
+extern int nivel;
+extern int lineas_totales;
+extern int piezas_caidas;
+extern double duracion_caida;
 
 // Funciones
 void NUEVAPIEZA (); // Elige una nueva pieza para que caiga en el tablero
@@ -45,7 +50,7 @@ void DIBUJARMARCO (); // Dibuja el marco del tablero
 void DIBUJARGRILLA (); // Dibuja la grilla del tablero
 void DIBUJARCARACTER (int posXPantalla, int posYPantalla, int caracter, int anchoCaracter, int color); // PONER COMENTARIOS
 void DIBUJARTEXTO (int posXPantalla, int posYPantalla, char *texto, int anchoCaracter); // PONER COMENTARIOS
-void DIBUJARPUNTAJE (int puntaje); // PONER COMENTARIOS
+void DIBUJARPUNTAJE (); // PONER COMENTARIOS
 void DIBUJARTITULO (); // PONER COMENTARIOS
 void DIBUJARINICIO (char *nombre); // PONER COMENTARIOS
 
