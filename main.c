@@ -10,6 +10,8 @@ PRUEBA DE TETRIS BÁSICO
 #include <conio.h>
 #include "graficos.h"
 
+extern char nombreJugador [21];
+
 int main ()
 {
     char nombreVentana [128]; // Vector para el nombre de la ventana
@@ -33,7 +35,7 @@ int main ()
         fprintf (stderr, "Error al aplicar la nueva paleta de colores: %s\n", gbt_obtener_log()); // Si falla la aplicación de la paleta, lo indica
         return -1;
     }
-
+    DIBUJARINICIO (nombreJugador);
     srand (time (0)); // Para randomizar
     NUEVAPIEZA (); // Obtiene pieza nueva
     tGBT_Temporizador *timer_caida = gbt_temporizador_crear (0.3); // Temporizador para limitar la velocidad del juego
