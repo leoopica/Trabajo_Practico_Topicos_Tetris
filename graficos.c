@@ -1,13 +1,13 @@
 #include "graficos.h"
-#include "sprites.c"
+#include "sprites.h"
 #include <stdlib.h>
 #include <time.h>
 
 // Definición del tablero
-int tablero [filas][columnas] = {0};
+int tablero [filasTablero][columnasTablero] = {0};
 
 // Paleta de colores
-tGBT_ColorRGB paletaCGA [CANT_COLORES] =
+tGBT_ColorRGB paletaCGA [cantColores] =
 {
     {0x00, 0x00, 0x00}, // 0:   Negro
     {0x00, 0x00, 0xAA}, // 1:   Azul
@@ -27,8 +27,8 @@ tGBT_ColorRGB paletaCGA [CANT_COLORES] =
     {0xFF, 0xFF, 0xFF}  // 15:  Usado como transparente por GBT
 };
 
-int colorBrillo [CANT_COLORES] = {0,9,10,11,12,13,15,15,7,15,15,15,15,15,15,15}; // Paleta de colores para la parte de brillo
-int colorSombra [CANT_COLORES] = {0,1,2,3,4,5,4,8,0,1,2,3,4,5,6,7}; // Paleta de colores para la parte de sombra
+int colorBrillo [cantColores] = {0,9,10,11,12,13,15,15,7,15,15,15,15,15,15,15}; // Paleta de colores para la parte de brillo
+int colorSombra [cantColores] = {0,1,2,3,4,5,4,8,0,1,2,3,4,5,6,7}; // Paleta de colores para la parte de sombra
 
 sPieza actual;
 
@@ -39,16 +39,16 @@ void NUEVAPIEZA ()
     tipo = rand () % cantPiezas; // Randomiza la pieza
     COPIARPIEZA (actual.forma, piezas [tipo]); // Busca la pieza en el catálogo de acuerdo al número randomizado en TIPO, y copia la forma de dicha pieza en la pieza actual
     actual.fila = 0; // Ubica la pieza en la fila 0 (arriba de todo)
-    actual.columna = columnas / 2 - 2; // Ubica la pieza en la mitad horizontal del tablero
+    actual.columna = columnasTablero / 2 - 2; // Ubica la pieza en la mitad horizontal del tablero
     actual.color = colorPiezas [tipo]; // Pone el color
 }
 
 void COPIARPIEZA (int destino [4][4], int origen [4][4])
 {
     int f, c;
-    for (f = 0; f < 4; f ++) // Recorre filas de la matriz de la forma
+    for (f = 0; f < 4; f ++) // Recorre filasTablero de la matriz de la forma
     {
-        for (c = 0; c < 4; c ++) // Recorre columnas de la matriz de la forma
+        for (c = 0; c < 4; c ++) // Recorre columnasTablero de la matriz de la forma
         {
             destino [f][c] = origen [f][c]; // Copia el pixel de la posición de origen en el destino
         }
@@ -57,7 +57,7 @@ void COPIARPIEZA (int destino [4][4], int origen [4][4])
 
 void DIBUJAR ()
 {
-    int fTablero, cTablero, fPieza, cPieza; // Filas y columnas de tablero y de matriz de pieza
+    int fTablero, cTablero, fPieza, cPieza; // filasTablero y columnasTablero de tablero y de matriz de pieza
     int posXPantalla, posYPantalla; // Posición horizontal y vertical
     int pixelXBloque, pixelYBloque; // Pixel horizontal y vertical de la pieza
     int ocupado = 0, colorBase, colorFinal; // Ubicación ocupada, color original del bloque, color que va a dibujarse en el pixel
@@ -68,15 +68,15 @@ void DIBUJAR ()
     DIBUJARMARCO ();
     DIBUJARGRILLA ();
 
-    for (fTablero = 0; fTablero < filas; fTablero ++) // Recorre filas del tablero
+    for (fTablero = 0; fTablero < filasTablero; fTablero ++) // Recorre filasTablero del tablero
     {
-        for (cTablero = 0; cTablero < columnas; cTablero ++) // Recorre columnas del tablero
+        for (cTablero = 0; cTablero < columnasTablero; cTablero ++) // Recorre columnasTablero del tablero
         {
             ocupado = tablero [fTablero][cTablero]; // Verifica si ya hay un mino en esa posición
             
-            for (fPieza = 0; fPieza < 4; fPieza ++) // Recorre filas de matriz de la pieza
+            for (fPieza = 0; fPieza < 4; fPieza ++) // Recorre filasTablero de matriz de la pieza
             {
-                for (cPieza = 0; cPieza < 4; cPieza ++) // Recorre columnas de matriz de la pieza
+                for (cPieza = 0; cPieza < 4; cPieza ++) // Recorre columnasTablero de matriz de la pieza
                 {
                     if (actual.forma [fPieza][cPieza] == 1) // Verifica si la matriz de la pieza tiene un mino en esa posición
                     {
@@ -92,12 +92,12 @@ void DIBUJAR ()
             {
                 colorBase = ocupado; // Guarda el color base de la pieza a dibujar
                 // Dibujar bloque
-                posXPantalla = OFFSET_X + cTablero * TAM_CELDA -1; // Convierte coordenadas horizontales del tablero en coordenadas en pantalla
-                posYPantalla = OFFSET_Y + fTablero * TAM_CELDA -1; // Convierte coordenadas verticales del tablero en coordenadas en pantalla
+                posXPantalla = offsetHorizontal + cTablero * tamMino -1; // Convierte coordenadas horizontales del tablero en coordenadas en pantalla
+                posYPantalla = offsetVertical + fTablero * tamMino -1; // Convierte coordenadas verticales del tablero en coordenadas en pantalla
 
-                for (pixelYBloque = 0; pixelYBloque <= TAM_CELDA; pixelYBloque ++) // Recorre filas de píxeles dentro del bloque
+                for (pixelYBloque = 0; pixelYBloque <= tamMino; pixelYBloque ++) // Recorre filasTablero de píxeles dentro del bloque
                 {
-                    for (pixelXBloque = 0; pixelXBloque <= TAM_CELDA; pixelXBloque ++) // Recorre columnas de píxeles dentro del bloque
+                    for (pixelXBloque = 0; pixelXBloque <= tamMino; pixelXBloque ++) // Recorre columnasTablero de píxeles dentro del bloque
                     {
                         colorFinal = colorBase; // Pone el pixel en el color de la base
                         
@@ -107,7 +107,7 @@ void DIBUJAR ()
                         }
                         else 
                         {
-                            if (pixelYBloque >= TAM_CELDA - 2 || pixelXBloque >= TAM_CELDA - 2) // Verifica la posición del pixel para ver si está en la esquina inferior derecha
+                            if (pixelYBloque >= tamMino - 2 || pixelXBloque >= tamMino - 2) // Verifica la posición del pixel para ver si está en la esquina inferior derecha
                             {
                                 colorFinal = colorSombra [colorBase]; // Pone sombra en esquina inferior derecha (borde de 2 píxeles)
                             }
@@ -124,15 +124,15 @@ void DIBUJAR ()
 int COLISION (int filaNueva, int columnaNueva, int forma [4][4])
 {
     int filaPieza, columnaPieza, fTablero, cTablero, colisiona = 0;
-    for (filaPieza = 0; filaPieza < 4; filaPieza ++) // Recorre matriz de la pieza por filas
+    for (filaPieza = 0; filaPieza < 4; filaPieza ++) // Recorre matriz de la pieza por filasTablero
     {
-        for (columnaPieza = 0; columnaPieza < 4; columnaPieza ++) // Recorre matriz de la pieza por columnas
+        for (columnaPieza = 0; columnaPieza < 4; columnaPieza ++) // Recorre matriz de la pieza por columnasTablero
         {
             if (forma [filaPieza][columnaPieza] == 1) // Verifica la matriz de la pieza para ver si tiene o no ocupado (para poder dibujarla)
             {
                 fTablero = filaNueva + filaPieza; // Pone la pieza en el tablero
                 cTablero = columnaNueva + columnaPieza; // Pone la pieza en el tablero
-                if (fTablero >= filas || cTablero < 0 || cTablero >= columnas) // Evalua colisión con los bordes del tablero
+                if (fTablero >= filasTablero || cTablero < 0 || cTablero >= columnasTablero) // Evalua colisión con los bordes del tablero
                 {
                     colisiona = 1;
                     return colisiona;
@@ -151,9 +151,9 @@ int COLISION (int filaNueva, int columnaNueva, int forma [4][4])
 void FIJARPIEZA ()
 {
     int filaPieza, columnaPieza;
-    for (filaPieza = 0; filaPieza < 4; filaPieza ++) // Recorre matriz de la pieza por filas
+    for (filaPieza = 0; filaPieza < 4; filaPieza ++) // Recorre matriz de la pieza por filasTablero
     {
-        for (columnaPieza = 0; columnaPieza < 4; columnaPieza ++) // Recorre matriz de la pieza por columnas
+        for (columnaPieza = 0; columnaPieza < 4; columnaPieza ++) // Recorre matriz de la pieza por columnasTablero
         {
             if (actual.forma [filaPieza][columnaPieza] == 1) // Verifica si en dicha posición de la matriz de la pieza hay o no un mino
             {
@@ -167,11 +167,11 @@ void LIMPIARLINEAS ()
 {
     int fila, columna, filaAux, llena;
 
-    for (fila = filas - 1; fila >= 0; fila --) // Recorre las filas del tablero, desde abajo hasta arriba
+    for (fila = filasTablero - 1; fila >= 0; fila --) // Recorre las filasTablero del tablero, desde abajo hasta arriba
     {
         llena = 1;
 
-        for (columna = 0; columna < columnas; columna ++) // Recorre las columnas del tablero
+        for (columna = 0; columna < columnasTablero; columna ++) // Recorre las columnasTablero del tablero
         {
             if (tablero[fila][columna] == 0) // Evalúa si está ocupado el espacio en el tablero. Si encuentra un vacío, la fila no está llena
             {
@@ -183,13 +183,13 @@ void LIMPIARLINEAS ()
         {
             for (filaAux = fila; filaAux > 0; filaAux --) // Recorre desde la fila llena hacia arriba
             {
-                for (columna = 0; columna < columnas; columna ++) // Recorre las columnas
+                for (columna = 0; columna < columnasTablero; columna ++) // Recorre las columnasTablero
                 {
                     tablero[filaAux][columna] = tablero[filaAux - 1][columna]; // Copia el contenido de la fila de arriba en la fila actual
                 }
             }
 
-            for (columna = 0; columna < columnas; columna ++)
+            for (columna = 0; columna < columnasTablero; columna ++)
             {
                 tablero[0][columna] = 0; // Borra la fila superior
             }
@@ -203,9 +203,9 @@ void ROTARHORARIO ()
 {
     int temporal [4][4]; // Matriz temporal de pieza
     int i, j;
-    for (i = 0; i < 4; i ++) // Recorre las filas de la matriz de la pieza
+    for (i = 0; i < 4; i ++) // Recorre las filasTablero de la matriz de la pieza
     {
-        for (j = 0; j < 4; j ++) // Recorre las columnas de la matriz de la pieza
+        for (j = 0; j < 4; j ++) // Recorre las columnasTablero de la matriz de la pieza
         {
             temporal [j][3 - i] = actual.forma [i][j]; // Rota la pieza 90º en sentido horario, y lo guarda en el temporal
         }
@@ -220,9 +220,9 @@ void ROTARANTIHORARIO ()
 {
     int temporal [4][4]; // Matriz temporal de pieza
     int i, j;
-    for (i = 0; i < 4; i ++) // Recorre las filas de la matriz de la pieza
+    for (i = 0; i < 4; i ++) // Recorre las filasTablero de la matriz de la pieza
     {
-        for (j = 0; j < 4; j ++) // Recorre las columnas de la matriz de la pieza
+        for (j = 0; j < 4; j ++) // Recorre las columnasTablero de la matriz de la pieza
         {
             temporal [3 - j][i] = actual.forma [i][j]; // Rota la pieza 90º en sentido horario, y lo guarda en el temporal
         }
@@ -238,9 +238,9 @@ void DIBUJARFONDO ()
    int x, y; // Horizontal, vertical
    int color; // Variable color
 
-    for (y = 0; y < ALTO_VENTANA; y ++) // Recorre verticalmente la ventana
+    for (y = 0; y < altoVentana; y ++) // Recorre verticalmente la ventana
     {
-        for (x = 0; x < ANCHO_VENTANA; x ++) // Recorre horizontalmente la ventana
+        for (x = 0; x < anchoVentana; x ++) // Recorre horizontalmente la ventana
         {
             color = 1; // Define el color del fondo como azul oscuro
 
@@ -258,10 +258,10 @@ void DIBUJARMARCO ()
     int x, y; // Horizontal, vertical
     int x0, y0; // Esquina superior izquierda del marco
     int ancho, alto; // Ancho y alto del marco
-    x0 = OFFSET_X - 4; // Agranda el marco horizontalmente hacia afuera del tablero
-    y0 = OFFSET_Y - 4; // Agranda el marco verticalmente hacia afuera del tablero
-    ancho = columnas * TAM_CELDA + 8; // Calcula el ancho del marco en pixeles de acuerdo a la cantidad de columnas del tablero. Agrega 8 por el borde
-    alto  = filas * TAM_CELDA + 8; // Calcula el alto del marco en pixeles de acuerdo a la cantidad de columnas del tablero. Agrega 8 por el borde
+    x0 = offsetHorizontal - 4; // Agranda el marco horizontalmente hacia afuera del tablero
+    y0 = offsetVertical - 4; // Agranda el marco verticalmente hacia afuera del tablero
+    ancho = columnasTablero * tamMino + 8; // Calcula el ancho del marco en pixeles de acuerdo a la cantidad de columnasTablero del tablero. Agrega 8 por el borde
+    alto  = filasTablero * tamMino + 8; // Calcula el alto del marco en pixeles de acuerdo a la cantidad de columnasTablero del tablero. Agrega 8 por el borde
     int color;
     for (y = y0; y < y0 + alto; y ++) // Recorre horizontalmente el marco
     {
@@ -289,24 +289,53 @@ void DIBUJARGRILLA ()
     int fila, columna;
     int x, y;
 
-    for (fila = 0; fila <= filas; fila ++) // Líneas horizontales
+    for (fila = 0; fila <= filasTablero; fila ++) // Líneas horizontales
     {
-        y = OFFSET_Y + fila * TAM_CELDA;
+        y = offsetVertical + fila * tamMino;
 
-        for (x = OFFSET_X; x <= OFFSET_X + columnas * TAM_CELDA; x ++)
+        for (x = offsetHorizontal; x <= offsetHorizontal + columnasTablero * tamMino; x ++)
         {
             gbt_dibujar_pixel(x, y, 8); // gris oscuro
         }
     }
 
-    for (columna = 0; columna <= columnas; columna ++) // Líneas verticales
+    for (columna = 0; columna <= columnasTablero; columna ++) // Líneas verticales
     {
-        x = OFFSET_X + columna * TAM_CELDA;
+        x = offsetHorizontal + columna * tamMino;
 
-        for (y = OFFSET_Y; y <= OFFSET_Y + filas * TAM_CELDA; y ++)
+        for (y = offsetVertical; y <= offsetVertical + filasTablero * tamMino; y ++)
         {
             gbt_dibujar_pixel(x, y, 8); // gris oscuro
         }
     }
 }
 
+void DIBUJARCARACTER (int posXPantalla, int posYPantalla, int caracter, int anchoCaracter)
+{
+    int filaCaracter, columnaCaracter;
+    for (filaCaracter = 0; filaCaracter < altoCaracter; filaCaracter ++)
+    {
+        for (columnaCaracter = 0; columnaCaracter < anchoCaracter; columnaCaracter ++)
+        {
+            if (anchoCaracter = anchoCaracter8)
+            {
+                if (fuente8x8 [caracter][filaCaracter][columnaCaracter] == 1)
+                {
+                    gbt_dibujar_pixel (posXPantalla + columnaCaracter, posYPantalla + filaCaracter, 15);
+                }
+            }
+            if (anchoCaracter = anchoCaracter16)
+            {
+                if (fuente8x16 [caracter][filaCaracter][columnaCaracter] == 1)
+                {
+                    gbt_dibujar_pixel (posXPantalla + columnaCaracter, posYPantalla + filaCaracter, 15);
+                }
+            }
+        }
+    }
+}
+
+void DIBUJARTEXTO (int posXPantalla, int posYPantalla, char *texto)
+{
+
+}

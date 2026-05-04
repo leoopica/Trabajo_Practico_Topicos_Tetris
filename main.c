@@ -20,15 +20,15 @@ int main ()
         return -1;
     }
 
-    sprintf (nombreVentana, "Tetris %dx%d", ANCHO_VENTANA, ALTO_VENTANA); // Pone el nombre Tetris en la ventana con las medidas de la misma
+    sprintf (nombreVentana, "Tetris %dx%d", anchoVentana, altoVentana); // Pone el nombre Tetris en la ventana con las medidas de la misma
 
-    if (gbt_crear_ventana (nombreVentana, ANCHO_VENTANA, ALTO_VENTANA, ESCALA_VENTANA) != 0) // Crea la ventana
+    if (gbt_crear_ventana (nombreVentana, anchoVentana, altoVentana, escalaVentana) != 0) // Crea la ventana
     {
         fprintf (stderr, "Error al iniciar el modulo de graficos de GBT: %s\n", gbt_obtener_log()); // Si falla en la creación, lo indica
         return -1;
     }
 
-    if (gbt_aplicar_paleta (paletaCGA, CANT_COLORES, GBT_FORMATO_888) != 0) // Aplica la paleta de colores definida
+    if (gbt_aplicar_paleta (paletaCGA, cantColores, GBT_FORMATO_888) != 0) // Aplica la paleta de colores definida
     {
         fprintf (stderr, "Error al aplicar la nueva paleta de colores: %s\n", gbt_obtener_log()); // Si falla la aplicación de la paleta, lo indica
         return -1;

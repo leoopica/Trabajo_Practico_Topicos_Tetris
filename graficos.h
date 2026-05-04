@@ -3,19 +3,17 @@
 
 #include <stdio.h>
 #include "gbt.h"
+#include "sprites.h"
 
 // Constantes
-#define CANT_COLORES 16 // Define cantidad de colores
-#define filas 20 // Define cantidad de filas del tablero
-#define columnas 10 // Define cantidad de columnas del tablero
-#define cantPiezas 7 // Define la cantidad de piezas
-#define TAM_CELDA 8 // Define tamaño de cada mino en pixeles
-#define ANCHO_VENTANA 320 // Define ancho de la ventana
-#define ALTO_VENTANA 200 // Define alto de la ventana
-#define ESCALA_VENTANA 2 // Define el escalado de la ventana
-#define OFFSET_X (ANCHO_VENTANA - columnas * TAM_CELDA) / 2 // Define el margen horizontal desde la izquierda
-#define OFFSET_Y (ALTO_VENTANA - filas * TAM_CELDA) / 2 // Define el margen vertical desde abajo
-#define cantCaracteres 36 // 26 letras, 10 números
+#define cantColores 16 // Define cantidad de colores
+#define filasTablero 20 // Define cantidad de filasTablero del tablero
+#define columnasTablero 10 // Define cantidad de columnasTablero del tablero
+#define anchoVentana 320 // Define ancho de la ventana
+#define altoVentana 200 // Define alto de la ventana
+#define escalaVentana 2 // Define el escalado de la ventana
+#define offsetHorizontal (anchoVentana - columnasTablero * tamMino) / 2 // Define el margen horizontal desde la izquierda
+#define offsetVertical (altoVentana - filasTablero * tamMino) / 2 // Define el margen vertical desde abajo
 
 // Estructura para las piezas
 typedef struct
@@ -26,11 +24,11 @@ typedef struct
 } sPieza;
 
 // Variables globales - extern permite que se compartan las variables globales entre archivos
-extern int tablero [filas][columnas]; // Define el tablero
+extern int tablero [filasTablero][columnasTablero]; // Define el tablero
 extern int piezas [cantPiezas][4][4]; // Define las piezas -> Cantidad de piezas, alto, ancho
-extern tGBT_ColorRGB paletaCGA [CANT_COLORES]; // Define paleta de colores
-extern int colorBrillo [CANT_COLORES]; // Define colores para la parte de brillo de las piezas
-extern int colorSombra [CANT_COLORES]; // Define colores para la parte de sombra de las piezas
+extern tGBT_ColorRGB paletaCGA [cantColores]; // Define paleta de colores
+extern int colorBrillo [cantColores]; // Define colores para la parte de brillo de las piezas
+extern int colorSombra [cantColores]; // Define colores para la parte de sombra de las piezas
 extern sPieza actual;
 
 // Funciones
@@ -45,5 +43,8 @@ void ROTARANTIHORARIO ();
 void DIBUJARFONDO (); // Dibuja el fondo
 void DIBUJARMARCO (); // Dibuja el marco del tablero
 void DIBUJARGRILLA (); // Dibuja la grilla del tablero
+void DIBUJARCARACTER (int posXPantalla, int posYPantalla, int caracter, int anchoCaracter);
+void DIBUJARTEXTO (int posXPantalla, int posYPantalla, char *texto);
+
 
 #endif
