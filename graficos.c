@@ -45,8 +45,10 @@ void NUEVAPIEZA ()
     int tipo; // Pieza que va a salir
     int colorPiezas [cantPiezas] = {11, 9, 6, 14, 10, 13, 12}; // Asigna un color a cada pieza
     tipo = rand () % cantPiezas; // Randomiza la pieza
+    actual.tipo = tipo;
+    actual.rotacion = 0;
     COPIARPIEZA (actual.forma, piezas [tipo]); // Busca la pieza en el catálogo de acuerdo al número randomizado en TIPO, y copia la forma de dicha pieza en la pieza actual
-    actual.fila = 0; // Ubica la pieza en la fila 0 (arriba de todo)
+    actual.fila = -1; // Ubica la pieza ligeramente arriba (SRS prefiere esto para el I)
     actual.columna = columnasTablero / 2 - 2; // Ubica la pieza en la mitad horizontal del tablero
     actual.color = colorPiezas [tipo]; // Pone el color
 
@@ -140,7 +142,7 @@ void DIBUJAR ()
 
 int COLISION (int filaNueva, int columnaNueva, int forma [4][4])
 {
-    int filaPieza, columnaPieza, fTablero, cTablero, colisiona = 0;
+    int filaPieza, columnaPieza, fTablero, cTablero;
     for (filaPieza = 0; filaPieza < 4; filaPieza ++) // Recorre matriz de la pieza por filasTablero
     {
         for (columnaPieza = 0; columnaPieza < 4; columnaPieza ++) // Recorre matriz de la pieza por columnasTablero
@@ -149,32 +151,38 @@ int COLISION (int filaNueva, int columnaNueva, int forma [4][4])
             {
                 fTablero = filaNueva + filaPieza; // Pone la pieza en el tablero
                 cTablero = columnaNueva + columnaPieza; // Pone la pieza en el tablero
-                if (fTablero >= filasTablero || cTablero < 0 || cTablero >= columnasTablero) // Evalua colisión con los bordes del tablero
+
+                // Permitir que la pieza esté por encima del tablero (fTablero < 0), pero no por debajo ni a los costados
+                if (fTablero >= filasTablero || cTablero < 0 || cTablero >= columnasTablero) 
                 {
-                    colisiona = 1;
-                    return colisiona;
+                    return 1; // Colisión con bordes
                 }
-                if (tablero [fTablero][cTablero]  != 0) // Evalua colisión dentro del tablero, o sea, si hay un bloque ocupando dicho espacio
+                
+                if (fTablero >= 0 && tablero [fTablero][cTablero] != 0) // Evalua colisión con otros bloques
                 {
-                    colisiona = 1;
-                    return colisiona;
+                    return 1;
                 }
             }
         }
     }
-    return colisiona;
+    return 0; // No hay colisión
 }
 
 void FIJARPIEZA ()
 {
-    int filaPieza, columnaPieza;
+    int filaPieza, columnaPieza, fTablero, cTablero;
     for (filaPieza = 0; filaPieza < 4; filaPieza ++) // Recorre matriz de la pieza por filasTablero
     {
         for (columnaPieza = 0; columnaPieza < 4; columnaPieza ++) // Recorre matriz de la pieza por columnasTablero
         {
             if (actual.forma [filaPieza][columnaPieza] == 1) // Verifica si en dicha posición de la matriz de la pieza hay o no un mino
             {
-                tablero [actual.fila + filaPieza][actual.columna + columnaPieza] = actual.color; // Si hay un mino, lo dibuja en el tablero
+                fTablero = actual.fila + filaPieza;
+                cTablero = actual.columna + columnaPieza;
+                if (fTablero >= 0 && fTablero < filasTablero && cTablero >= 0 && cTablero < columnasTablero)
+                {
+                    tablero [fTablero][cTablero] = actual.color; // Si hay un mino y está dentro del tablero, lo fija
+                }
             }
         }
     }
@@ -240,38 +248,71 @@ void LIMPIARLINEAS ()
     }
 }
 
-void ROTARHORARIO ()
+// Sistema de Rotación Simplificado (Alternativa a SRS)
+// Intenta rotar en la posición original. Si falla, intenta desplazamientos simples
+// a los lados o hacia arriba (para evitar quedarse trabado contra paredes o el suelo).
+void APLICAR_ROTACION (int sentido) // 1 horario, -1 antihorario
 {
-    int temporal [4][4]; // Matriz temporal de pieza
-    int i, j;
-    for (i = 0; i < 4; i ++) // Recorre las filasTablero de la matriz de la pieza
-    {
-        for (j = 0; j < 4; j ++) // Recorre las columnasTablero de la matriz de la pieza
-        {
-            temporal [j][3 - i] = actual.forma [i][j]; // Rota la pieza 90º en sentido horario, y lo guarda en el temporal
+    int i, j, test;
+    int nueva_rotacion = (actual.rotacion + sentido + 4) % 4;
+    int temporal [4][4];
+    int size = (actual.tipo == 0) ? 4 : (actual.tipo == 3 ? 2 : 3);
+    
+    // Si es pieza O (tipo 3), no rota físicamente
+    if (actual.tipo == 3) {
+        actual.rotacion = nueva_rotacion;
+        return;
+    }
+
+    // 1. Generar la matriz rotada en 'temporal'
+    for (i = 0; i < size; i++) {
+        for (j = 0; j < size; j++) {
+            if (sentido == 1) // Horario
+                temporal[j][size - 1 - i] = actual.forma[i][j];
+            else // Antihorario
+                temporal[size - 1 - j][i] = actual.forma[i][j];
         }
     }
-    if (COLISION (actual.fila, actual.columna, temporal) == 0) // Verifica si hay colisión al rotar la pieza
-    {
-        COPIARPIEZA (actual.forma, temporal); // Si no hay rotación, copia la forma de la pieza rotada a la actual
+    // Limpiar el resto de la matriz temporal 4x4
+    for (i = 0; i < 4; i++) {
+        for (j = 0; j < 4; j++) {
+            if (i >= size || j >= size) temporal[i][j] = 0;
+        }
     }
+
+    // 2. Definir una lista de intentos de desplazamiento (Wall Kicks simples)
+    // {X, Y} -> Desplazamiento relativo
+    int intentos[5][2] = {
+        { 0,  0}, // Intento 1: Posición original
+        {-1,  0}, // Intento 2: Un espacio a la izquierda
+        { 1,  0}, // Intento 3: Un espacio a la derecha
+        { 0, -1}, // Intento 4: Un espacio hacia arriba
+        {-2,  0}  // Intento 5: Dos espacios a la izquierda (útil para la pieza I)
+    };
+
+    
+    for (test = 0; test < 5; test++) {
+        int dx = intentos[test][0];
+        int dy = intentos[test][1];
+
+        if (COLISION(actual.fila + dy, actual.columna + dx, temporal) == 0) {
+            actual.fila += dy;
+            actual.columna += dx;
+            actual.rotacion = nueva_rotacion;
+            COPIARPIEZA(actual.forma, temporal);
+            return;
+        }
+    }
+}
+
+void ROTARHORARIO ()
+{
+    APLICAR_ROTACION(1);
 }
 
 void ROTARANTIHORARIO ()
 {
-    int temporal [4][4]; // Matriz temporal de pieza
-    int i, j;
-    for (i = 0; i < 4; i ++) // Recorre las filasTablero de la matriz de la pieza
-    {
-        for (j = 0; j < 4; j ++) // Recorre las columnasTablero de la matriz de la pieza
-        {
-            temporal [3 - j][i] = actual.forma [i][j]; // Rota la pieza 90º en sentido horario, y lo guarda en el temporal
-        }
-    }
-    if (COLISION (actual.fila, actual.columna, temporal) == 0) // Verifica si hay colisión al rotar la pieza
-    {
-        COPIARPIEZA (actual.forma, temporal); // Si no hay rotación, copia la forma de la pieza rotada a la actual
-    }
+    APLICAR_ROTACION(-1);
 }
 
 void DIBUJARFONDO ()

@@ -21,6 +21,8 @@ typedef struct
     int forma [4][4]; // Matriz de forma de la pieza
     int fila, columna;
     int color;
+    int rotacion; // Estado de rotación (0-3) para SRS
+    int tipo;     // Tipo de pieza (0-6)
 } sPieza;
 
 // Variables globales - extern permite que se compartan las variables globales entre archivos
