@@ -1,6 +1,7 @@
 #include "graficos.h"
 #include "sprites.h"
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 // Definición del tablero
@@ -35,6 +36,7 @@ int nivel = 1;
 int lineas_totales = 0;
 int piezas_caidas = 0;
 double duracion_caida = 1.0;
+eEstadoJuego estado_juego = ESTADO_RUNNING;
 
 char nombreJugador [21]; // HAY QUE CAMBIARLO, PROBABLEMENTE
 
@@ -48,7 +50,7 @@ void NUEVAPIEZA ()
     actual.tipo = tipo;
     actual.rotacion = 0;
     COPIARPIEZA (actual.forma, piezas [tipo]); // Busca la pieza en el catálogo de acuerdo al número randomizado en TIPO, y copia la forma de dicha pieza en la pieza actual
-    actual.fila = -1; // Ubica la pieza ligeramente arriba (SRS prefiere esto para el I)
+    actual.fila = 0;
     actual.columna = columnasTablero / 2 - 2; // Ubica la pieza en la mitad horizontal del tablero
     actual.color = colorPiezas [tipo]; // Pone el color
 
@@ -57,6 +59,28 @@ void NUEVAPIEZA ()
     {
         duracion_caida /= 1.03;
     }
+
+    // Detección de Game Over
+    if (COLISION(actual.fila, actual.columna, actual.forma)) {
+        estado_juego = ESTADO_GAMEOVER;
+    }
+}
+
+void REINICIARJUEGO ()
+{
+    int f, c;
+    for (f = 0; f < filasTablero; f++) {
+        for (c = 0; c < columnasTablero; c++) {
+            tablero[f][c] = 0;
+        }
+    }
+    puntaje = 0;
+    nivel = 1;
+    lineas_totales = 0;
+    piezas_caidas = 0;
+    duracion_caida = 1.0;
+    estado_juego = ESTADO_RUNNING;
+    NUEVAPIEZA();
 }
 
 void COPIARPIEZA (int destino [4][4], int origen [4][4])
@@ -248,7 +272,7 @@ void LIMPIARLINEAS ()
     }
 }
 
-// Sistema de Rotación Simplificado (Alternativa a SRS)
+
 // Intenta rotar en la posición original. Si falla, intenta desplazamientos simples
 // a los lados o hacia arriba (para evitar quedarse trabado contra paredes o el suelo).
 void APLICAR_ROTACION (int sentido) // 1 horario, -1 antihorario
@@ -337,31 +361,37 @@ void DIBUJARFONDO ()
 
 void DIBUJARMARCO ()
 {
-    int x, y; // Horizontal, vertical
-    int x0, y0; // Esquina superior izquierda del marco
-    int ancho, alto; // Ancho y alto del marco
-    x0 = offsetHorizontal - 4; // Agranda el marco horizontalmente hacia afuera del tablero
-    y0 = offsetVertical - 4; // Agranda el marco verticalmente hacia afuera del tablero
-    ancho = columnasTablero * tamMino + 8; // Calcula el ancho del marco en pixeles de acuerdo a la cantidad de columnasTablero del tablero. Agrega 8 por el borde
-    alto  = filasTablero * tamMino + 8; // Calcula el alto del marco en pixeles de acuerdo a la cantidad de columnasTablero del tablero. Agrega 8 por el borde
+    int x0 = offsetHorizontal - 4;                // Esquina superior izquierda
+    int y0 = offsetVertical - 4;
+    int ancho = columnasTablero * tamMino + 8;    // Ancho del marco
+    int alto  = filasTablero * tamMino + 8;       // Alto del marco
+
+    // Reutiliza la función genérica (fondo color 0 = negro / "transparente" sobre el fondo del tablero)
+    DIBUJARMARCOGENERICO(x0, y0, ancho, alto, 0);
+}
+
+void DIBUJARMARCOGENERICO (int x0, int y0, int ancho, int alto, int colorFondo)
+{
+    int x, y;
     int color;
-    for (y = y0; y < y0 + alto; y ++) // Recorre horizontalmente el marco
+
+    for (y = y0; y < y0 + alto; y ++)            // Recorre verticalmente el marco
     {
-        for (x = x0; x < x0 + ancho; x ++) // Recorre verticalmente el marco
+        for (x = x0; x < x0 + ancho; x ++)       // Recorre horizontalmente el marco
         {
-            color = 0; // Fondo gris
+            color = colorFondo;                  // Color de fondo de la caja
 
-            if (y <= y0 + 1 || x <= x0 + 1) // Evalúa si el pixel en cuestión está arriba o a la izquierda para ponerle brillo al marco
-                {
-                    color = 7; // Brillo
-                }
+            if (y <= y0 + 1 || x <= x0 + 1)      // Borde superior o izquierdo -> brillo
+            {
+                color = 7;                       // Gris claro
+            }
 
-            if (y >= y0 + alto - 2 || x >= x0 + ancho - 2) // Evalúa si el pixel en cuestión está abajo o a la derecha para ponerle sombra al marco
-                {
-                    color = 8; // Sombra
-                }
+            if (y >= y0 + alto - 2 || x >= x0 + ancho - 2) // Borde inferior o derecho -> sombra
+            {
+                color = 8;                       // Gris oscuro
+            }
 
-            gbt_dibujar_pixel(x, y, color); // Dibuja el pixel
+            gbt_dibujar_pixel(x, y, color);
         }
     }
 }
@@ -422,6 +452,7 @@ void DIBUJARTEXTO (int posXPantalla, int posYPantalla, char *texto, int anchoCar
     int i = 0, caracter;
     while (texto [i] != '\0')
     {
+        caracter = -1;
         if (texto [i] >= 'A' && texto [i] <= 'Z')
         {
             caracter = texto [i] - 'A';
@@ -434,7 +465,7 @@ void DIBUJARTEXTO (int posXPantalla, int posYPantalla, char *texto, int anchoCar
         {
             caracter = 36;
         }
-        DIBUJARCARACTER (posXPantalla + i * anchoCaracter, posYPantalla, caracter, anchoCaracter, 7);
+        if (caracter != -1) DIBUJARCARACTER (posXPantalla + i * anchoCaracter, posYPantalla, caracter, anchoCaracter, 7);
         i++ ;
     }
 }
@@ -466,6 +497,68 @@ void DIBUJARTITULO () // PONER COMENTARIOS
         }
         DIBUJARCARACTER (100 + i * anchoCaracter16, 50, caracter, anchoCaracter16, colores [i]);
     } 
+}
+
+void DIBUJARPAUSA ()
+{
+    int anchoCaja = 200;
+    int altoCaja  = 50;
+    int centroX = anchoVentana / 2;
+    int centroY = altoVentana  / 2;
+    int x0 = centroX - anchoCaja / 2;
+    int y0 = centroY - altoCaja  / 2;
+
+    DIBUJARMARCOGENERICO(x0, y0, anchoCaja, altoCaja, 0);
+
+    char *linea1 = "PAUSA";
+    char *linea2 = "PRESIONE P PARA VOLVER";
+
+    DIBUJARTEXTO(centroX - ((int)strlen(linea1) * anchoCaracter8) / 2, y0 + 10, linea1, anchoCaracter8);
+    DIBUJARTEXTO(centroX - ((int)strlen(linea2) * anchoCaracter8) / 2, y0 + 30, linea2, anchoCaracter8);
+}
+
+void DIBUJARGAMEOVER ()
+{
+    // Tamaño de la caja negra (modificá estos valores para cambiar el tamaño)
+    int anchoCaja = 160;
+    int altoCaja  = 160;
+
+    // Centro de la ventana
+    int centroX = anchoVentana / 2;
+    int centroY = altoVentana  / 2;
+
+    // Esquina superior izquierda de la caja
+    int x0 = centroX - anchoCaja / 2;
+    int y0 = centroY - altoCaja  / 2;
+
+    // Esquina superior derecha de la caja
+    int xF = centroX + anchoCaja / 2;
+    int yF = centroY + altoCaja  / 2;
+
+    // Dibuja el marco con fondo negro
+    DIBUJARMARCOGENERICO(x0, y0, anchoCaja, altoCaja, 0);
+
+    // Helper local: calcula la X centrada según la longitud del texto
+    // (lo dejo inline con strlen para mayor claridad)
+
+    char puntajeFinal[32];
+    sprintf(puntajeFinal, "SCORE %d", puntaje);
+
+    char *linea1 = "GAME OVER";
+    char *linea2 = puntajeFinal;
+    char *linea3 = "R PARA REINICIAR";
+    char *linea4 = "ESC PARA SALIR";
+
+    // Posiciones Y separadas uniformemente dentro de la caja
+    int y1 = y0 + 10;
+    int y2 = y0 + 30;
+    int y3 = yF - 30;
+    int y4 = yF - 15;
+
+    DIBUJARTEXTO(centroX - ((int)strlen(linea1) * anchoCaracter8) / 2, y1, linea1, anchoCaracter8);
+    DIBUJARTEXTO(centroX - ((int)strlen(linea2) * anchoCaracter8) / 2, y2, linea2, anchoCaracter8);
+    DIBUJARTEXTO(centroX - ((int)strlen(linea3) * anchoCaracter8) / 2, y3, linea3, anchoCaracter8);
+    DIBUJARTEXTO(centroX - ((int)strlen(linea4) * anchoCaracter8) / 2, y4, linea4, anchoCaracter8);
 }
 
 void DIBUJARINICIO(char *nombre) // PONER COMENTARIOS

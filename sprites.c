@@ -1,10 +1,10 @@
 #include "sprites.h"
 #include <stdlib.h>
 
-// Definición de las formas de las piezas según SRS
+// Definición de las formas de las piezas
 int piezas [cantPiezas][4][4] =
 {
-    // Pieza I (Tipo 0) - SRS Initial: 0, 0, 0, 0 / 1, 1, 1, 1 / 0, 0, 0, 0 / 0, 0, 0, 0
+    // Pieza I (Tipo 0)
     {
         {0, 0, 0, 0},
         {1, 1, 1, 1},

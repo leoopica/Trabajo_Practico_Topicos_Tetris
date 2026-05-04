@@ -21,7 +21,7 @@ typedef struct
     int forma [4][4]; // Matriz de forma de la pieza
     int fila, columna;
     int color;
-    int rotacion; // Estado de rotación (0-3) para SRS
+    int rotacion; // Estado de rotación (0-3)
     int tipo;     // Tipo de pieza (0-6)
 } sPieza;
 
@@ -38,8 +38,18 @@ extern int lineas_totales;
 extern int piezas_caidas;
 extern double duracion_caida;
 
+// Estados del juego
+typedef enum {
+    ESTADO_RUNNING,
+    ESTADO_PAUSED,
+    ESTADO_GAMEOVER
+} eEstadoJuego;
+
+extern eEstadoJuego estado_juego;
+
 // Funciones
 void NUEVAPIEZA (); // Elige una nueva pieza para que caiga en el tablero
+void REINICIARJUEGO (); // Reinicia los valores del juego
 void COPIARPIEZA (int destino [4][4], int origen [4][4]); // Copia la forma de la pieza de un lado a otro
 void DIBUJAR (); // Dibuja los gráficos
 int COLISION (int filaNueva, int columnaNueva, int forma [4][4]); // Evalúa la colisión de la pieza que está cayendo
@@ -49,11 +59,14 @@ void ROTARHORARIO ();
 void ROTARANTIHORARIO ();
 void DIBUJARFONDO (); // Dibuja el fondo
 void DIBUJARMARCO (); // Dibuja el marco del tablero
+void DIBUJARMARCOGENERICO (int x0, int y0, int ancho, int alto, int colorFondo); // Dibuja un marco 3D en cualquier posición
 void DIBUJARGRILLA (); // Dibuja la grilla del tablero
 void DIBUJARCARACTER (int posXPantalla, int posYPantalla, int caracter, int anchoCaracter, int color); // PONER COMENTARIOS
 void DIBUJARTEXTO (int posXPantalla, int posYPantalla, char *texto, int anchoCaracter); // PONER COMENTARIOS
 void DIBUJARPUNTAJE (); // PONER COMENTARIOS
 void DIBUJARTITULO (); // PONER COMENTARIOS
+void DIBUJARPAUSA ();
+void DIBUJARGAMEOVER ();
 void DIBUJARINICIO (char *nombre); // PONER COMENTARIOS
 
 #endif
