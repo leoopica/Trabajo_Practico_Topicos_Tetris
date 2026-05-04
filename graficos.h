@@ -43,8 +43,10 @@ void ROTARANTIHORARIO ();
 void DIBUJARFONDO (); // Dibuja el fondo
 void DIBUJARMARCO (); // Dibuja el marco del tablero
 void DIBUJARGRILLA (); // Dibuja la grilla del tablero
-void DIBUJARCARACTER (int posXPantalla, int posYPantalla, int caracter, int anchoCaracter);
-void DIBUJARTEXTO (int posXPantalla, int posYPantalla, char *texto);
-
+void DIBUJARCARACTER (int posXPantalla, int posYPantalla, int caracter, int anchoCaracter, int color); // PONER COMENTARIOS
+void DIBUJARTEXTO (int posXPantalla, int posYPantalla, char *texto, int anchoCaracter); // PONER COMENTARIOS
+void DIBUJARPUNTAJE (int puntaje); // PONER COMENTARIOS
+void DIBUJARTITULO (); // PONER COMENTARIOS
+void DIBUJARINICIO (char *nombre); // PONER COMENTARIOS
 
 #endif

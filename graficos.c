@@ -30,6 +30,10 @@ tGBT_ColorRGB paletaCGA [cantColores] =
 int colorBrillo [cantColores] = {0,9,10,11,12,13,15,15,7,15,15,15,15,15,15,15}; // Paleta de colores para la parte de brillo
 int colorSombra [cantColores] = {0,1,2,3,4,5,4,8,0,1,2,3,4,5,6,7}; // Paleta de colores para la parte de sombra
 
+int puntaje = 9870; // HAY QUE SACARLO DE ACÁ. SÓLO ESTÁ ACÁ PARA PROBAR COSAS
+
+char nombreJugador [21]; // HAY QUE CAMBIARLO, PROBABLEMENTE
+
 sPieza actual;
 
 void NUEVAPIEZA ()
@@ -67,6 +71,9 @@ void DIBUJAR ()
     DIBUJARFONDO ();
     DIBUJARMARCO ();
     DIBUJARGRILLA ();
+    DIBUJARPUNTAJE (puntaje);
+    DIBUJARTEXTO(offsetHorizontal + columnasTablero * tamMino + tamMino, offsetVertical + filasTablero * tamMino - 20 - 10, "JUGADOR ", anchoCaracter8); // MODIFICAR PARA QUE SEA MÁS SIMPLE?
+    DIBUJARTEXTO(offsetHorizontal + columnasTablero * tamMino + tamMino, offsetVertical + filasTablero * tamMino - 20, nombreJugador, anchoCaracter8); // MODIFICAR PARA QUE SEA MÁS SIMPLE?
 
     for (fTablero = 0; fTablero < filasTablero; fTablero ++) // Recorre filasTablero del tablero
     {
@@ -310,32 +317,173 @@ void DIBUJARGRILLA ()
     }
 }
 
-void DIBUJARCARACTER (int posXPantalla, int posYPantalla, int caracter, int anchoCaracter)
+void DIBUJARCARACTER (int posXPantalla, int posYPantalla, int caracter, int anchoCaracter, int color) // PONER COMENTARIOS
 {
     int filaCaracter, columnaCaracter;
     for (filaCaracter = 0; filaCaracter < altoCaracter; filaCaracter ++)
     {
         for (columnaCaracter = 0; columnaCaracter < anchoCaracter; columnaCaracter ++)
         {
-            if (anchoCaracter = anchoCaracter8)
+            if (anchoCaracter == anchoCaracter8)
             {
                 if (fuente8x8 [caracter][filaCaracter][columnaCaracter] == 1)
                 {
-                    gbt_dibujar_pixel (posXPantalla + columnaCaracter, posYPantalla + filaCaracter, 15);
+                    gbt_dibujar_pixel (posXPantalla + columnaCaracter, posYPantalla + filaCaracter, color);
                 }
             }
-            if (anchoCaracter = anchoCaracter16)
+            if (anchoCaracter == anchoCaracter16)
             {
                 if (fuente8x16 [caracter][filaCaracter][columnaCaracter] == 1)
                 {
-                    gbt_dibujar_pixel (posXPantalla + columnaCaracter, posYPantalla + filaCaracter, 15);
+                    gbt_dibujar_pixel (posXPantalla + columnaCaracter, posYPantalla + filaCaracter, color);
                 }
             }
         }
     }
 }
 
-void DIBUJARTEXTO (int posXPantalla, int posYPantalla, char *texto)
+void DIBUJARTEXTO (int posXPantalla, int posYPantalla, char *texto, int anchoCaracter) // PONER COMENTARIOS
 {
+    int i = 0, caracter;
+    while (texto [i] != '\0')
+    {
+        if (texto [i] >= 'A' && texto [i] <= 'Z')
+        {
+            caracter = texto [i] - 'A';
+        }
+        else if (texto [i] >= '0' && texto [i] <= '9')
+        {
+            caracter = 26 + (texto [i] - '0');
+        }
+        else if (texto [i] == ' ')
+        {
+            caracter = 36;
+        }
+        DIBUJARCARACTER (posXPantalla + i * anchoCaracter, posYPantalla, caracter, anchoCaracter, 7);
+        i++ ;
+    }
+}
 
+void DIBUJARPUNTAJE (int puntaje) // PONER COMENTARIOS
+{
+    char textoPuntaje [20];
+    sprintf (textoPuntaje, "SCORE %d", puntaje);
+    DIBUJARTEXTO (offsetHorizontal + columnasTablero * tamMino + tamMino, offsetVertical, textoPuntaje, anchoCaracter8);
+}
+
+void DIBUJARTITULO () // PONER COMENTARIOS
+{
+    char titulo [] = "TETRIS";
+    int colores [] = {12, 14, 10, 11, 13, 9};
+    int i, caracter;
+    for (i = 0; i < 6; i ++) // 6 = cantidad letras TETRIS
+    {
+        if (titulo [i] >= 'A' && titulo [i] <= 'Z')
+        {
+            caracter = titulo [i] - 'A';
+        }
+        DIBUJARCARACTER (100 + i * anchoCaracter16, 50, caracter, anchoCaracter16, colores [i]);
+    } 
+}
+
+void DIBUJARINICIO(char *nombre) // PONER COMENTARIOS
+{
+    int i = 0;
+    int terminado = 0;
+    eGBT_Tecla tecla;
+
+    int colores[6] = {12, 9, 10, 14, 13, 11}; // colores para TETRIS
+    char titulo[] = "TETRIS";
+
+    nombre[0] = '\0';
+
+    while (!terminado)
+    {
+        gbt_procesar_entrada();
+        tecla = gbt_obtener_tecla_presionada();
+
+        if (tecla != GBTK_DESCONOCIDA)
+        {
+            if (tecla == GBTK_ENTER)
+            {
+                terminado = 1;
+            }
+            else if (tecla == GBTK_RETROCESO)
+            {
+                if (i > 0)
+                {
+                    i--;
+                    nombre[i] = '\0';
+                }
+            }
+            else if (tecla >= 'a' && tecla <= 'z')
+            {
+                if (i < 21 - 1)
+                {
+                    nombre[i] = tecla - 32; // mayúscula
+                    i++;
+                    nombre[i] = '\0';
+                }
+            }
+            else if (tecla >= '0' && tecla <= '9')
+            {
+                if (i < 21 - 1)
+                {
+                    nombre[i] = tecla;
+                    i++;
+                    nombre[i] = '\0';
+                }
+            }
+            else if (tecla == GBTK_ESPACIO)
+            {
+                if (i < 21 - 1)
+                {
+                    nombre[i] = ' ';
+                    i++;
+                    nombre[i] = '\0';
+                }
+            }
+        }
+
+        // --- DIBUJADO ---
+        gbt_borrar_backbuffer(0);
+        DIBUJARFONDO();
+
+        // 🔥 TETRIS (8x16 con colores)
+        int xInicio = 100;
+        int yInicio = 40;
+
+        for (int j = 0; j < 6; j++)
+        {
+            int caracter = titulo[j] - 'A';
+
+            DIBUJARCARACTER(
+                xInicio + j * anchoCaracter16,
+                yInicio,
+                caracter,
+                anchoCaracter16,
+                colores[j]
+            );
+        }
+
+        // Texto
+        DIBUJARTEXTO(80, 120, "INGRESE SU NOMBRE:", anchoCaracter8);
+
+        // Nombre
+        DIBUJARTEXTO(80, 140, nombre, anchoCaracter8);
+
+        // Cursor
+        if (i < 21 - 1)
+        {
+            DIBUJARCARACTER(
+                80 + i * anchoCaracter8,
+                140,
+                36, // índice del carácter VACÍO o usá uno tipo "_"
+                anchoCaracter8,
+                7
+            );
+        }
+        gbt_volcar_backbuffer();
+        gbt_esperar(16);
+    }
 }

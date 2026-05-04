@@ -132,13 +132,13 @@
 	<stdio.h>
 	"gbt.h"
 
-1777857109 source:c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\tp_topicos_2026_1c_lunes_galaxia\trabajo_practico_topicos_tetris\graficos.c
+1777869292 source:c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\tp_topicos_2026_1c_lunes_galaxia\trabajo_practico_topicos_tetris\graficos.c
 	"graficos.h"
 	"sprites.h"
 	<stdlib.h>
 	<time.h>
 
-1777857101 c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\tp_topicos_2026_1c_lunes_galaxia\trabajo_practico_topicos_tetris\graficos.h
+1777868888 c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\tp_topicos_2026_1c_lunes_galaxia\trabajo_practico_topicos_tetris\graficos.h
 	<stdio.h>
 	"gbt.h"
 	"sprites.h"
@@ -150,7 +150,7 @@
 	"gbt_temporizador.h"
 	"gbt_vector.h"
 
-1776646998 c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\tp_topicos_2026_1c_lunes_galaxia\trabajo_practico_topicos_tetris\gbt_entrada.h
+1777868890 c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\tp_topicos_2026_1c_lunes_galaxia\trabajo_practico_topicos_tetris\gbt_entrada.h
 	<stdint.h>
 
 1776646998 c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\tp_topicos_2026_1c_lunes_galaxia\trabajo_practico_topicos_tetris\gbt_graficos.h
@@ -165,7 +165,7 @@
 	<stdlib.h>
 	<stdint.h>
 
-1777856566 source:c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\tp_topicos_2026_1c_lunes_galaxia\trabajo_practico_topicos_tetris\main.c
+1777869073 source:c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\tp_topicos_2026_1c_lunes_galaxia\trabajo_practico_topicos_tetris\main.c
 	<stdio.h>
 	<stdlib.h>
 	<string.h>
@@ -178,11 +178,11 @@
 	"graficos.h"
 	<stdlib.h>
 
-1777856565 source:c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\tp_topicos_2026_1c_lunes_galaxia\trabajo_practico_topicos_tetris\sprites.c
-	"graficos.h"
+1777866705 source:c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\tp_topicos_2026_1c_lunes_galaxia\trabajo_practico_topicos_tetris\sprites.c
+	"sprites.h"
 	<stdlib.h>
 
-1777857039 c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\tp_topicos_2026_1c_lunes_galaxia\trabajo_practico_topicos_tetris\sprites.h
+1777866258 c:\users\leo\documents\leo\unlam\carrera\primer cuatrimestre 2026\topicos de programacion\trabajo practico\tp_topicos_2026_1c_lunes_galaxia\trabajo_practico_topicos_tetris\sprites.h
 	<stdio.h>
 	"gbt.h"
 
