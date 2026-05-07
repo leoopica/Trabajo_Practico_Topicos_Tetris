@@ -9,6 +9,7 @@ PRUEBA DE TETRIS BÁSICO
 #include <windows.h>
 #include <conio.h>
 #include "graficos.h"
+#include "inicio.h"
 
 extern char nombreJugador [21];
 

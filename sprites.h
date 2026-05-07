@@ -6,7 +6,7 @@
 
 #define cantPiezas 7 // Define la cantidad de piezas
 #define tamMino 8 // Define tamaño de cada mino en pixeles
-#define cantCaracteres 37 // 26 letras, 10 números, 1 vacío
+#define cantCaracteres 38 // 26 letras, 10 números, 1 vacío, 1 guion bajo
 #define altoCaracter 8
 #define anchoCaracter8 8
 #define anchoCaracter16 16

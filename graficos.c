@@ -1,8 +1,9 @@
 #include "graficos.h"
 #include "sprites.h"
+#include "inicio.h"
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
+
 
 // Definición del tablero
 int tablero [filasTablero][columnasTablero] = {0};
@@ -36,6 +37,7 @@ int nivel = 1;
 int lineas_totales = 0;
 int piezas_caidas = 0;
 double duracion_caida = 1.0;
+int velocidad = 1;
 eEstadoJuego estado_juego = ESTADO_RUNNING;
 
 char nombreJugador [21]; // HAY QUE CAMBIARLO, PROBABLEMENTE
@@ -98,6 +100,7 @@ void NUEVAPIEZA ()
     if (piezas_caidas > 1 && (piezas_caidas - 1) % 10 == 0)
     {
         duracion_caida /= 1.03;
+        velocidad ++;
     }
 
     // Detección de Game Over
@@ -119,6 +122,7 @@ void REINICIARJUEGO ()
     lineas_totales = 0;
     piezas_caidas = 0;
     duracion_caida = 1.0;
+    velocidad = 1;
     estado_juego = ESTADO_RUNNING;
     bolsaIndice = 7; // Forzar llenado de bolsa
     CONFIGURARPIEZA(&actual, OBTENERPIEZABOLSA());
@@ -561,6 +565,9 @@ void DIBUJARPUNTAJE () // PONER COMENTARIOS
     sprintf (textoPuntaje, "LINES %d", lineas_totales);
     DIBUJARTEXTO (offsetHorizontal + columnasTablero * tamMino + tamMino, offsetVertical + 40, textoPuntaje, anchoCaracter8);
 
+    sprintf (textoPuntaje, "SPEED %d", velocidad);
+    DIBUJARTEXTO (offsetHorizontal + columnasTablero * tamMino + tamMino, offsetVertical + 60, textoPuntaje, anchoCaracter8);
+
 }
 
 void DIBUJARTITULO () // PONER COMENTARIOS
@@ -660,7 +667,10 @@ void DIBUJARINICIO(char *nombre) // PONER COMENTARIOS
         {
             if (tecla == GBTK_ENTER)
             {
-                terminado = 1;
+                if (i > 0)
+                {
+                    terminado = 1;
+                }
             }
             else if (tecla == GBTK_RETROCESO)
             {
@@ -690,7 +700,7 @@ void DIBUJARINICIO(char *nombre) // PONER COMENTARIOS
             }
             else if (tecla == GBTK_ESPACIO)
             {
-                if (i < 21 - 1)
+                if (i < 21 - 1 && i > 0)
                 {
                     nombre[i] = ' ';
                     i++;
@@ -703,36 +713,22 @@ void DIBUJARINICIO(char *nombre) // PONER COMENTARIOS
         gbt_borrar_backbuffer(0);
         DIBUJARFONDO();
 
-        // 🔥 TETRIS (8x16 con colores)
-        int xInicio = 100;
-        int yInicio = 40;
-
-        for (int j = 0; j < 6; j++)
-        {
-            int caracter = titulo[j] - 'A';
-
-            DIBUJARCARACTER(
-                xInicio + j * anchoCaracter16,
-                yInicio,
-                caracter,
-                anchoCaracter16,
-                colores[j]
-            );
-        }
+        // // 🔥 TETRIS
+        DIBUJARLOGOCOMPLETO(69, 15);
 
         // Texto
-        DIBUJARTEXTO(80, 120, "INGRESE SU NOMBRE:", anchoCaracter8);
+        DIBUJARTEXTO(80, 140, "INGRESE SU NOMBRE:", anchoCaracter8);
 
         // Nombre
-        DIBUJARTEXTO(80, 140, nombre, anchoCaracter8);
+        DIBUJARTEXTO(80, 160, nombre, anchoCaracter8);
 
         // Cursor
         if (i < 21 - 1)
         {
             DIBUJARCARACTER(
                 80 + i * anchoCaracter8,
-                140,
-                36, // índice del carácter VACÍO o usá uno tipo "_"
+                160,
+                37, // índice del carácter "_"
                 anchoCaracter8,
                 7
             );

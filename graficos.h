@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include "gbt.h"
 #include "sprites.h"
+#include "inicio.h"
 
 // Constantes
 #define cantColores 16 // Define cantidad de colores
