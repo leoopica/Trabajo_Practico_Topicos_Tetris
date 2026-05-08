@@ -45,6 +45,10 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="graficos.h" />
+		<Unit filename="inicio.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="inicio.h" />
 		<Unit filename="main.c">
 			<Option compilerVar="CC" />
 		</Unit>

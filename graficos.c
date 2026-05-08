@@ -261,6 +261,115 @@ void FIJARPIEZA ()
 
 void LIMPIARLINEAS ()
 {
+    int fila, columna;
+    int filaDestino = filasTablero - 1; // Indica en qué fila debe copiarse la próxima fila válida
+    int llena; // Indica si la fila está completamente llena
+    int lineas_en_esta_ronda = 0; // Cantidad de líneas eliminadas en esta jugada
+
+    // Recorre las filas del tablero desde abajo hacia arriba
+    for (fila = filasTablero - 1; fila >= 0; fila --)
+    {
+        llena = 1; // Asume inicialmente que la fila está llena
+
+        // Recorre las columnas de la fila actual
+        for (columna = 0; columna < columnasTablero; columna ++)
+        {
+            // Verifica si existe algún espacio vacío en la fila
+            if (tablero [fila][columna] == 0)
+            {
+                llena = 0; // Si encuentra un vacío, la fila ya no está llena
+            }
+        }
+
+        // Evalúa si la fila NO está llena
+        if (llena == 0)
+        {
+            // Verifica si la fila necesita desplazarse hacia abajo
+            if (filaDestino != fila)
+            {
+                // Copia la fila actual en la posición de destino
+                for (columna = 0; columna < columnasTablero; columna ++)
+                {
+                    tablero [filaDestino][columna] = tablero [fila][columna];
+                }
+            }
+
+            // Mueve la fila de destino una posición hacia arriba
+            filaDestino --;
+        }
+        else
+        {
+            // Si la fila estaba llena, aumenta el contador de líneas eliminadas
+            lineas_en_esta_ronda ++;
+        }
+    }
+
+    // Limpia todas las filas restantes en la parte superior del tablero
+    while (filaDestino >= 0)
+    {
+        // Recorre las columnas de la fila
+        for (columna = 0; columna < columnasTablero; columna ++)
+        {
+            tablero [filaDestino][columna] = 0; // Borra el contenido de la celda
+        }
+
+        // Continúa con la fila superior
+        filaDestino --;
+    }
+
+    // Verifica si se eliminó al menos una línea
+    if (lineas_en_esta_ronda > 0)
+    {
+        int multiplicador = (nivel / 2) + 1; // Calcula multiplicador según nivel
+
+        // Limita el multiplicador a un máximo de 5
+        if (multiplicador > 5)
+        {
+            multiplicador = 5;
+        }
+
+        int puntos_base = 0;
+
+        // Define el puntaje base según la cantidad de líneas eliminadas
+        if (lineas_en_esta_ronda == 1)
+        {
+            puntos_base = 100;
+        }
+        else if (lineas_en_esta_ronda == 2)
+        {
+            puntos_base = 400;
+        }
+        else if (lineas_en_esta_ronda == 3)
+        {
+            puntos_base = 900;
+        }
+        else if (lineas_en_esta_ronda >= 4)
+        {
+            puntos_base = 2000;
+        }
+
+        // Calcula bonus adicional según la velocidad actual
+        int bonus_velocidad = (int)((1.0 - duracion_caida) * 500);
+
+        // Evita bonus negativos
+        if (bonus_velocidad < 0)
+        {
+            bonus_velocidad = 0;
+        }
+
+        // Suma los puntos obtenidos
+        puntaje += (puntos_base * multiplicador) + (bonus_velocidad * lineas_en_esta_ronda);
+
+        // Suma la cantidad de líneas eliminadas al total
+        lineas_totales += lineas_en_esta_ronda;
+
+        // Actualiza el nivel cada 10 líneas
+        nivel = (lineas_totales / 10) + 1;
+    }
+}
+
+/* void LIMPIARLINEAS ()
+{
     int fila, columna, filaAux, llena;
     int lineas_en_esta_ronda = 0;
 
@@ -317,7 +426,7 @@ void LIMPIARLINEAS ()
         lineas_totales += lineas_en_esta_ronda;
         nivel = (lineas_totales / 10) + 1;
     }
-}
+} */
 
 
 // Intenta rotar en la posición original. Si falla, intenta desplazamientos simples
