@@ -3,7 +3,7 @@
 /**
  * @brief Dibuja un rectángulo relleno de un color sólido.
  */
-void dibujar_rectangulo(int x_origen, int y_origen, int ancho, int alto, int color) {
+void DIBUJAR_RECTANGULO(int x_origen, int y_origen, int ancho, int alto, int color) {
     for (int y = 0; y < alto; y++) {
         for (int x = 0; x < ancho; x++) {
             gbt_dibujar_pixel(x_origen + x, y_origen + y, color);
@@ -14,7 +14,7 @@ void dibujar_rectangulo(int x_origen, int y_origen, int ancho, int alto, int col
 /**
  * @brief Dibuja solo el contorno (borde) de un rectángulo.
  */
-void dibujar_borde_rectangulo(int x_origen, int y_origen, int ancho, int alto, int color) {
+void DIBUJAR_BORDE_RECTANGULO(int x_origen, int y_origen, int ancho, int alto, int color) {
     // Líneas horizontales (Arriba y Abajo)
     for (int x = 0; x < ancho; x++) {
         gbt_dibujar_pixel(x_origen + x, y_origen, color);
@@ -45,7 +45,7 @@ const char* sprite_tetris_ascii[LOGO_TEXTO_ALTO] = {
     "                                                 "
 };
 
-void dibujar_texto_tetris(int x_origen, int y_origen) {
+void DIBUJAR_TEXTO_TETRIS(int x_origen, int y_origen) {
     for (int y = 0; y < LOGO_TEXTO_ALTO; y++) {
         for (int x = 0; x < LOGO_TEXTO_ANCHO; x++) {
 
@@ -82,7 +82,7 @@ void dibujar_texto_tetris(int x_origen, int y_origen) {
  * * @param x_base Coordenada X donde arranca la punta superior izquierda del logo.
  * @param y_base Coordenada Y donde arranca la punta superior izquierda del logo.
  */
-void DIBUJARLOGOCOMPLETO(int x_base, int y_base) {
+void DIBUJAR_LOGO_COMPLETO(int x_base, int y_base) {
     // Dimensiones de la "T" gigante
     const int ANCHO_TOP   = 167;   // bloque horizontal (texto 147 + 10 margen *2)
     const int ALTO_TOP    = 50;    // alto del bloque horizontal
@@ -102,12 +102,12 @@ void DIBUJARLOGOCOMPLETO(int x_base, int y_base) {
 
     // 0. Dibujamos padding exterior con sus bordes
     //Padding PALO
-    dibujar_rectangulo(POSICION_PADDING_X + OFFSET_PALO, POSICION_PADDING_Y + ALTO_TOP, ANCHO_PADDING_PALO, ALTO_PADDING_PALO, COLOR_AZUL_CLARO);
-    dibujar_borde_rectangulo(POSICION_PADDING_X + OFFSET_PALO, POSICION_PADDING_Y + ALTO_TOP, ANCHO_PADDING_PALO, ALTO_PADDING_PALO, COLOR_CIAN_CLARO);
+    DIBUJAR_RECTANGULO(POSICION_PADDING_X + OFFSET_PALO, POSICION_PADDING_Y + ALTO_TOP, ANCHO_PADDING_PALO, ALTO_PADDING_PALO, COLOR_AZUL_CLARO);
+    DIBUJAR_BORDE_RECTANGULO(POSICION_PADDING_X + OFFSET_PALO, POSICION_PADDING_Y + ALTO_TOP, ANCHO_PADDING_PALO, ALTO_PADDING_PALO, COLOR_CIAN_CLARO);
 
     // Padding TOP
-    dibujar_rectangulo(POSICION_PADDING_X,POSICION_PADDING_Y,ANCHO_PADDING_TOP,ALTO_PADDING_TOP,COLOR_AZUL_CLARO);
-    dibujar_borde_rectangulo(POSICION_PADDING_X,POSICION_PADDING_Y,ANCHO_PADDING_TOP,ALTO_PADDING_TOP,COLOR_CIAN_CLARO);
+    DIBUJAR_RECTANGULO(POSICION_PADDING_X,POSICION_PADDING_Y,ANCHO_PADDING_TOP,ALTO_PADDING_TOP,COLOR_AZUL_CLARO);
+    DIBUJAR_BORDE_RECTANGULO(POSICION_PADDING_X,POSICION_PADDING_Y,ANCHO_PADDING_TOP,ALTO_PADDING_TOP,COLOR_CIAN_CLARO);
 
     // 0.5 Tapamos la union interna entre los bordes
     for (int x = POSICION_PADDING_X + OFFSET_PALO + 1;
@@ -117,15 +117,15 @@ void DIBUJARLOGOCOMPLETO(int x_base, int y_base) {
                   }
 
     // 1. Bloque horizontal (parte superior de la T)
-    dibujar_rectangulo(x_base, y_base, ANCHO_TOP, ALTO_TOP, COLOR_AZUL);
+    DIBUJAR_RECTANGULO(x_base, y_base, ANCHO_TOP, ALTO_TOP, COLOR_AZUL);
 
     // 2. Palo vertical, perfectamente centrado
-    dibujar_rectangulo(x_base + OFFSET_PALO, y_base + ALTO_TOP,
+    DIBUJAR_RECTANGULO(x_base + OFFSET_PALO, y_base + ALTO_TOP,
                        ANCHO_PALO, ALTO_PALO, COLOR_AZUL);
 
     // 3. Bordes
-    dibujar_borde_rectangulo(x_base, y_base, ANCHO_TOP, ALTO_TOP, COLOR_CIAN_CLARO);
-    dibujar_borde_rectangulo(x_base + OFFSET_PALO, y_base + ALTO_TOP,
+    DIBUJAR_BORDE_RECTANGULO(x_base, y_base, ANCHO_TOP, ALTO_TOP, COLOR_CIAN_CLARO);
+    DIBUJAR_BORDE_RECTANGULO(x_base + OFFSET_PALO, y_base + ALTO_TOP,
                              ANCHO_PALO, ALTO_PALO, COLOR_CIAN_CLARO);
 
     // 4. Tapamos la unión interna entre los dos rectángulos
@@ -141,7 +141,7 @@ void DIBUJARLOGOCOMPLETO(int x_base, int y_base) {
     //    margin interior lateral = (ANCHO_TOP - 147) / 2 = 10
     const int ANCHO_TEXTO = LOGO_TEXTO_ANCHO * 3;        // 147
     const int ALTO_TEXTO  = LOGO_TEXTO_ALTO  * 3;        // 33
-    dibujar_texto_tetris(
+    DIBUJAR_TEXTO_TETRIS(
         x_base + (ANCHO_TOP - ANCHO_TEXTO) / 2,               // 10
         y_base + (ALTO_TOP  - ALTO_TEXTO)  / 2                // 8
     );

@@ -1,5 +1,6 @@
 /*
-PRUEBA DE TETRIS BÁSICO
+DATOS DEL GRUPO
+(Apellido, Nombre, DNI, Usuario de GitHub, Entrega)
 */
 
 #include <stdio.h>
@@ -36,6 +37,7 @@ int main ()
         fprintf (stderr, "Error al aplicar la nueva paleta de colores: %s\n", gbt_obtener_log()); // Si falla la aplicación de la paleta, lo indica
         return -1;
     }
+
     DIBUJARINICIO (nombreJugador);
     srand (time (0)); // Para randomizar
     NUEVAPIEZA (); // Obtiene pieza nueva

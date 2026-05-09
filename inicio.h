@@ -27,9 +27,9 @@
 
 extern const char* sprite_tetris_ascii[LOGO_TEXTO_ALTO];
 
-void dibujar_rectangulo(int x_origen, int y_origen, int ancho, int alto, int color);
-void dibujar_borde_rectangulo(int x_origen, int y_origen, int ancho, int alto, int color);
-void dibujar_texto_tetris(int x_origen, int y_origen);
-void DIBUJARLOGOCOMPLETO(int x_base, int y_base);
+void DIBUJAR_RECTANGULO(int x_origen, int y_origen, int ancho, int alto, int color);
+void DIBUJAR_BORDE_RECTANGULO(int x_origen, int y_origen, int ancho, int alto, int color);
+void DIBUJAR_TEXTO_TETRIS(int x_origen, int y_origen);
+void DIBUJAR_LOGO_COMPLETO(int x_base, int y_base);
 
 #endif
