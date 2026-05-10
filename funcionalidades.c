@@ -1,4 +1,5 @@
 #include "funcionalidades.h"
+#define duracion_animacion 4
 
 // Definición del tablero
 int tablero [filasTablero][columnasTablero] = {0};
@@ -14,7 +15,7 @@ eEstadoJuego estado_juego = ESTADO_RUNNING;
 char nombreJugador [21]; // HAY QUE CAMBIARLO, PROBABLEMENTE
 int filas_a_borrar[MAX_FILAS_BORRAR];
 int cant_filas_borrar;
-int animacion_borrado_activa;
+int animacion_borrado_activa = 0;
 int animacion_frame;
 
 /*
@@ -167,6 +168,8 @@ void FIJARPIEZA ()
             }
         }
     }
+    actual.fila = -1;
+    actual.columna = columnasTablero / 2 - 2;
 }
 
 void LIMPIARLINEAS ()
@@ -315,6 +318,7 @@ void APLICAR_ROTACION (int sentido) // 1 horario, -1 antihorario
     }
 }
 
+/*
 void ACTUALIZAR_ANIMACION_BORRADO()
 {
     if (!animacion_borrado_activa) return;
@@ -322,7 +326,7 @@ void ACTUALIZAR_ANIMACION_BORRADO()
     animacion_frame++;
 
     int centro = columnasTablero / 2;
-    int paso = animacion_frame % 10;
+    int paso = animacion_frame % duracion_animacion;
 
     for (int i = 0; i < cant_filas_borrar; i++)
     {
@@ -345,16 +349,53 @@ void ACTUALIZAR_ANIMACION_BORRADO()
     }
 
     // cuando termina la animación
-    if (animacion_frame > columnasTablero)
+    if (animacion_frame > duracion_animacion)
     {
         animacion_borrado_activa = 0;
         COLAPSAR_FILAS(); // <- reacomoda el tablero
+        animacion_frame = 0;
+    }
+}
+*/
+
+void ACTUALIZAR_ANIMACION_BORRADO() // NUEVA
+{
+    if (!animacion_borrado_activa) return;
+
+    animacion_frame++;
+
+    int centro = columnasTablero / 2;
+
+    for (int i = 0; i < cant_filas_borrar; i++)
+    {
+        int fila = filas_a_borrar[i];
+
+        for (int offset = 0; offset <= centro; offset++)
+        {
+            int izq = centro - offset;
+            int der = centro + offset;
+
+            if (animacion_frame >= offset * duracion_animacion)
+            {
+                if (izq >= 0)
+                    tablero[fila][izq] = 0;
+                if (der < columnasTablero)
+                    tablero[fila][der] = 0;
+            }
+        }
+    }
+
+    if (animacion_frame >= centro * duracion_animacion + duracion_animacion)
+    {
+        animacion_borrado_activa = 0;
+        COLAPSAR_FILAS();
+        animacion_frame = 0;
     }
 }
 
-void COLAPSAR_FILAS()
+void COLAPSAR_FILAS ()
 {
-    int filaDestino = filasTablero - 1;
+    int nuevaFila = filasTablero - 1;
 
     for (int fila = filasTablero - 1; fila >= 0; fila--)
     {
@@ -368,24 +409,24 @@ void COLAPSAR_FILAS()
 
         if (!es_borrada)
         {
-            if (filaDestino != fila)
+            if (nuevaFila != fila)
             {
                 for (int c = 0; c < columnasTablero; c++)
                 {
-                    tablero[filaDestino][c] = tablero[fila][c];
+                    tablero[nuevaFila][c] = tablero[fila][c];
                 }
             }
-            filaDestino--;
+            nuevaFila--;
         }
     }
 
-    while (filaDestino >= 0)
+    while (nuevaFila >= 0)
     {
         for (int c = 0; c < columnasTablero; c++)
         {
-            tablero[filaDestino][c] = 0;
+            tablero[nuevaFila][c] = 0;
         }
-        filaDestino--;
+        nuevaFila--;
     }
 
     cant_filas_borrar = 0;

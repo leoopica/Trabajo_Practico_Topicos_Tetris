@@ -56,8 +56,4 @@ void APLICAR_ROTACION (int sentido); // 1 horario, -1 antihorario
 void ROTARHORARIO ();
 void ROTARANTIHORARIO ();
 
-
-
-
-
 #endif //TRABAJO_PRACTICO_TOPICOS_TETRIS_FUNCIONALIDADES_H
