@@ -167,6 +167,7 @@ int main ()
                 }
             }
 
+            ACTUALIZAR_ANIMACION_BORRADO();
             DIBUJAR (); // Dibuja los gráficos (incluye tablero y pieza actual)
             if (estado_juego == ESTADO_PAUSED) DIBUJARPAUSA();
             if (estado_juego == ESTADO_GAMEOVER) DIBUJARGAMEOVER();
