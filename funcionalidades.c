@@ -12,7 +12,10 @@ double duracion_caida = 1.0;
 int velocidad = 1;
 eEstadoJuego estado_juego = ESTADO_RUNNING;
 char nombreJugador [21]; // HAY QUE CAMBIARLO, PROBABLEMENTE
-
+int filas_a_borrar[MAX_FILAS_BORRAR];
+int cant_filas_borrar;
+int animacion_borrado_activa;
+int animacion_frame;
 
 /*
  *------------------------*
@@ -169,172 +172,92 @@ void FIJARPIEZA ()
 void LIMPIARLINEAS ()
 {
     int fila, columna;
-    int filaDestino = filasTablero - 1; // Indica en qué fila debe copiarse la próxima fila válida
-    int llena; // Indica si la fila está completamente llena
+    int llena; // Indica en qué fila debe copiarse la próxima fila válida
     int lineas_en_esta_ronda = 0; // Cantidad de líneas eliminadas en esta jugada
 
+    // Reset de la lista de filas a borrar
+    cant_filas_borrar = 0;
+
     // Recorre las filas del tablero desde abajo hacia arriba
-    for (fila = filasTablero - 1; fila >= 0; fila --)
+    for (fila = filasTablero - 1; fila >= 0; fila--)
     {
         llena = 1; // Asume inicialmente que la fila está llena
 
         // Recorre las columnas de la fila actual
-        for (columna = 0; columna < columnasTablero; columna ++)
+        for (columna = 0; columna < columnasTablero; columna++)
         {
             // Verifica si existe algún espacio vacío en la fila
-            if (tablero [fila][columna] == 0)
+            if (tablero[fila][columna] == 0)
             {
                 llena = 0; // Si encuentra un vacío, la fila ya no está llena
             }
         }
 
-        // Evalúa si la fila NO está llena
-        if (llena == 0)
+        // Si la fila está completa, se guarda para animación
+        if (llena == 1)
         {
-            // Verifica si la fila necesita desplazarse hacia abajo
-            if (filaDestino != fila)
-            {
-                // Copia la fila actual en la posición de destino
-                for (columna = 0; columna < columnasTablero; columna ++)
-                {
-                    tablero [filaDestino][columna] = tablero [fila][columna];
-                }
-            }
-
-            // Mueve la fila de destino una posición hacia arriba
-            filaDestino --;
-        }
-        else
-        {
-            // Si la fila estaba llena, aumenta el contador de líneas eliminadas
-            lineas_en_esta_ronda ++;
+            filas_a_borrar[cant_filas_borrar] = fila; // Guarda en el vector de filas a borrar la fila que hay que borrar
+            cant_filas_borrar++; // Aumenta la cantidad de filas a borrar
+            lineas_en_esta_ronda++; // Aumenta la cantidad de filas que se borran en esta ronda
         }
     }
 
-    // Limpia todas las filas restantes en la parte superior del tablero
-    while (filaDestino >= 0)
+    // Si no hay filas a borrar, sale de la función
+    if (cant_filas_borrar == 0)
     {
-        // Recorre las columnas de la fila
-        for (columna = 0; columna < columnasTablero; columna ++)
-        {
-            tablero [filaDestino][columna] = 0; // Borra el contenido de la celda
-        }
-
-        // Continúa con la fila superior
-        filaDestino --;
+        return;
     }
 
-    // Verifica si se eliminó al menos una línea
-    if (lineas_en_esta_ronda > 0)
+    animacion_borrado_activa = 1; // Activa la animación
+    animacion_frame = 0;
+
+    // Calculo de puntaje
+    int multiplicador = (nivel / 2) + 1; // Calcula multiplicador según nivel
+
+    // Limita el multiplicador a un máximo de 5
+    if (multiplicador > 5)
     {
-        int multiplicador = (nivel / 2) + 1; // Calcula multiplicador según nivel
-
-        // Limita el multiplicador a un máximo de 5
-        if (multiplicador > 5)
-        {
-            multiplicador = 5;
-        }
-
-        int puntos_base = 0;
-
-        // Define el puntaje base según la cantidad de líneas eliminadas
-        if (lineas_en_esta_ronda == 1)
-        {
-            puntos_base = 100;
-        }
-        else if (lineas_en_esta_ronda == 2)
-        {
-            puntos_base = 400;
-        }
-        else if (lineas_en_esta_ronda == 3)
-        {
-            puntos_base = 900;
-        }
-        else if (lineas_en_esta_ronda >= 4)
-        {
-            puntos_base = 2000;
-        }
-
-        // Calcula bonus adicional según la velocidad actual
-        int bonus_velocidad = (int)((1.0 - duracion_caida) * 500);
-
-        // Evita bonus negativos
-        if (bonus_velocidad < 0)
-        {
-            bonus_velocidad = 0;
-        }
-
-        // Suma los puntos obtenidos
-        puntaje += (puntos_base * multiplicador) + (bonus_velocidad * lineas_en_esta_ronda);
-
-        // Suma la cantidad de líneas eliminadas al total
-        lineas_totales += lineas_en_esta_ronda;
-
-        // Actualiza el nivel cada 10 líneas
-        nivel = (lineas_totales / 10) + 1;
+        multiplicador = 5;
     }
+
+    int puntos_base = 0;
+
+    // Define el puntaje base según la cantidad de líneas eliminadas
+    if (lineas_en_esta_ronda == 1)
+    {
+        puntos_base = 100;
+    }
+    else if (lineas_en_esta_ronda == 2)
+    {
+        puntos_base = 400;
+    }
+    else if (lineas_en_esta_ronda == 3)
+    {
+        puntos_base = 900;
+    }
+    else if (lineas_en_esta_ronda >= 4)
+    {
+        puntos_base = 2000;
+    }
+
+    // Calcula bonus adicional según la velocidad actual
+    int bonus_velocidad = (int)((1.0 - duracion_caida) * 500);
+
+    // Evita bonus negativos
+    if (bonus_velocidad < 0)
+    {
+        bonus_velocidad = 0;
+    }
+
+    // Suma los puntos obtenidos
+    puntaje += (puntos_base * multiplicador) + (bonus_velocidad * lineas_en_esta_ronda);
+
+    // Suma la cantidad de líneas eliminadas al total
+    lineas_totales += lineas_en_esta_ronda;
+
+    // Actualiza el nivel cada 10 líneas
+    nivel = (lineas_totales / 10) + 1;
 }
-
-/* void LIMPIARLINEAS ()
-{
-    int fila, columna, filaAux, llena;
-    int lineas_en_esta_ronda = 0;
-
-    for (fila = filasTablero - 1; fila >= 0; fila --) // Recorre las filasTablero del tablero, desde abajo hasta arriba
-    {
-        llena = 1;
-
-        for (columna = 0; columna < columnasTablero; columna ++) // Recorre las columnasTablero del tablero
-        {
-            if (tablero[fila][columna] == 0) // Evalúa si está ocupado el espacio en el tablero. Si encuentra un vacío, la fila no está llena
-            {
-                llena = 0;
-            }
-        }
-
-        if (llena == 1) // Evalúa si llena quedó en 1. Si quedó en 1, significa que toda la fila está llena
-        {
-            lineas_en_esta_ronda ++;
-            for (filaAux = fila; filaAux > 0; filaAux --) // Recorre desde la fila llena hacia arriba
-            {
-                for (columna = 0; columna < columnasTablero; columna ++) // Recorre las columnasTablero
-                {
-                    tablero[filaAux][columna] = tablero[filaAux - 1][columna]; // Copia el contenido de la fila de arriba en la fila actual
-                }
-            }
-
-            for (columna = 0; columna < columnasTablero; columna ++)
-            {
-                tablero[0][columna] = 0; // Borra la fila superior
-            }
-
-            fila ++; // Vuelve a evaluar la misma fila, porque bajó una nueva
-        }
-    }
-
-    if (lineas_en_esta_ronda > 0)
-    {
-        int multiplicador = (nivel / 2) + 1;
-        if (multiplicador > 5)
-        {
-            multiplicador = 5;
-        }
-
-        int puntos_base = 0;
-        if (lineas_en_esta_ronda == 1) puntos_base = 100;
-        else if (lineas_en_esta_ronda == 2) puntos_base = 400;
-        else if (lineas_en_esta_ronda == 3) puntos_base = 900;
-        else if (lineas_en_esta_ronda >= 4) puntos_base = 2000;
-
-        int bonus_velocidad = (int)((1.0 - duracion_caida) * 500);
-        if (bonus_velocidad < 0) bonus_velocidad = 0;
-
-        puntaje += (puntos_base * multiplicador) + (bonus_velocidad * lineas_en_esta_ronda);
-        lineas_totales += lineas_en_esta_ronda;
-        nivel = (lineas_totales / 10) + 1;
-    }
-} */
-
 
 // Intenta rotar en la posición original. Si falla, intenta desplazamientos simples
 // a los lados o hacia arriba (para evitar quedarse trabado contra paredes o el suelo).
@@ -390,6 +313,82 @@ void APLICAR_ROTACION (int sentido) // 1 horario, -1 antihorario
             return;
         }
     }
+}
+
+void ACTUALIZAR_ANIMACION_BORRADO()
+{
+    if (!animacion_borrado_activa) return;
+
+    animacion_frame++;
+
+    int centro = columnasTablero / 2;
+    int paso = animacion_frame % 10;
+
+    for (int i = 0; i < cant_filas_borrar; i++)
+    {
+        int fila = filas_a_borrar[i];
+
+        for (int offset = 0; offset <= centro; offset++)
+        {
+            int izq = centro - offset;
+            int der = centro + offset;
+
+            if (paso >= offset)
+            {
+                if (izq >= 0)
+                    tablero[fila][izq] = 0;
+
+                if (der < columnasTablero)
+                    tablero[fila][der] = 0;
+            }
+        }
+    }
+
+    // cuando termina la animación
+    if (animacion_frame > columnasTablero)
+    {
+        animacion_borrado_activa = 0;
+        COLAPSAR_FILAS(); // <- reacomoda el tablero
+    }
+}
+
+void COLAPSAR_FILAS()
+{
+    int filaDestino = filasTablero - 1;
+
+    for (int fila = filasTablero - 1; fila >= 0; fila--)
+    {
+        int es_borrada = 0;
+
+        for (int i = 0; i < cant_filas_borrar; i++)
+        {
+            if (filas_a_borrar[i] == fila)
+                es_borrada = 1;
+        }
+
+        if (!es_borrada)
+        {
+            if (filaDestino != fila)
+            {
+                for (int c = 0; c < columnasTablero; c++)
+                {
+                    tablero[filaDestino][c] = tablero[fila][c];
+                }
+            }
+            filaDestino--;
+        }
+    }
+
+    while (filaDestino >= 0)
+    {
+        for (int c = 0; c < columnasTablero; c++)
+        {
+            tablero[filaDestino][c] = 0;
+        }
+        filaDestino--;
+    }
+
+    cant_filas_borrar = 0;
 }
 
 void ROTARHORARIO ()
