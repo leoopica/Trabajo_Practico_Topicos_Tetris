@@ -3,6 +3,7 @@
 #include "inicio.h"
 #include <stdlib.h>
 #include <string.h>
+#include "funcionalidades.h"
 
 // Paleta de colores
 tGBT_ColorRGB paletaCGA [cantColores] =
@@ -27,6 +28,7 @@ tGBT_ColorRGB paletaCGA [cantColores] =
 
 int colorBrillo [cantColores] = {0,9,10,11,12,13,15,15,7,15,15,15,15,15,15,15}; // Paleta de colores para la parte de brillo
 int colorSombra [cantColores] = {0,1,2,3,4,5,4,8,0,1,2,3,4,5,6,7}; // Paleta de colores para la parte de sombra
+extern int pieza_fijada_sin_nueva;
 
 void DIBUJAR ()
 {
@@ -51,15 +53,18 @@ void DIBUJAR ()
         {
             ocupado = tablero [fTablero][cTablero]; // Verifica si ya hay un mino en esa posición
             
-            for (fPieza = 0; fPieza < 4; fPieza ++) // Recorre filasTablero de matriz de la pieza
+            if (!pieza_fijada_sin_nueva)
             {
-                for (cPieza = 0; cPieza < 4; cPieza ++) // Recorre columnasTablero de matriz de la pieza
+                for (fPieza = 0; fPieza < 4; fPieza ++) // Recorre filasTablero de matriz de la pieza
                 {
-                    if (actual.forma [fPieza][cPieza] == 1) // Verifica si la matriz de la pieza tiene un mino en esa posición
+                    for (cPieza = 0; cPieza < 4; cPieza ++) // Recorre columnasTablero de matriz de la pieza
                     {
-                        if (actual.fila + fPieza == fTablero && actual.columna + cPieza == cTablero) // Verifica si el mino en cuestión está en cierta posición del tablero
+                        if (actual.forma [fPieza][cPieza] == 1) // Verifica si la matriz de la pieza tiene un mino en esa posición
                         {
-                            ocupado = actual.color; // Indica que está ocupado por la pieza
+                            if (actual.fila + fPieza == fTablero && actual.columna + cPieza == cTablero) // Verifica si el mino en cuestión está en cierta posición del tablero
+                            {
+                                ocupado = actual.color; // Indica que está ocupado por la pieza
+                            }
                         }
                     }
                 }
@@ -240,6 +245,10 @@ void DIBUJARPROXIMA ()
 
     DIBUJARTEXTO(x0, y0, "NEXT", anchoCaracter8);
 
+    if (animacion_borrado_activa)
+    {
+        return;
+    }
     // Dibujar miniatura de la próxima pieza
     for (f = 0; f < 4; f++)
     {

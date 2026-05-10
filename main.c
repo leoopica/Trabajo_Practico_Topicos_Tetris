@@ -11,8 +11,12 @@ DATOS DEL GRUPO
 #include <conio.h>
 #include "graficos.h"
 #include "inicio.h"
+#include "funcionalidades.h"
 
 extern char nombreJugador [21];
+extern int animacion_borrado_activa;
+static int animacion_estaba_activa = 0;
+int pieza_fijada_sin_nueva = 0;
 
 int main ()
 {
@@ -68,7 +72,7 @@ int main ()
         }
         else 
         {
-            if (estado_juego == ESTADO_RUNNING)
+            if (estado_juego == ESTADO_RUNNING && !animacion_borrado_activa)
             {
                 if (gbt_tecla_presionada (GBTK_p)) // Input tecla P para pausar
                 {
@@ -116,10 +120,14 @@ int main ()
                         {
                             FIJARPIEZA (); // Fija la pieza
                             LIMPIARLINEAS (); // Si se completó una fila, la limpia
-                            NUEVAPIEZA (); // Obtiene nueva pieza
+                            /*
+                            if (!animacion_borrado_activa)
+                                NUEVAPIEZA (); // Obtiene nueva pieza
+                            */
+                           pieza_fijada_sin_nueva = 1;
                             gbt_temporizador_destruir (timer_fijacion);
                             timer_fijacion = NULL;
-
+                            
                             // Si la duración cambió en NUEVAPIEZA, recrear el temporizador de caída
                             if (duracion_actual != duracion_caida)
                             {
@@ -168,6 +176,16 @@ int main ()
             }
 
             ACTUALIZAR_ANIMACION_BORRADO();
+            if (pieza_fijada_sin_nueva && !animacion_borrado_activa)
+            {
+                NUEVAPIEZA();
+                pieza_fijada_sin_nueva = 0;
+                animacion_estaba_activa = 0;
+            }
+            else
+            {
+                animacion_estaba_activa = animacion_borrado_activa;
+            }
             DIBUJAR (); // Dibuja los gráficos (incluye tablero y pieza actual)
             if (estado_juego == ESTADO_PAUSED) DIBUJARPAUSA();
             if (estado_juego == ESTADO_GAMEOVER) DIBUJARGAMEOVER();
