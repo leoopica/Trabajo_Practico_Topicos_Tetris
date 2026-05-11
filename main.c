@@ -12,192 +12,243 @@ DATOS DEL GRUPO
 #include "graficos.h"
 #include "inicio.h"
 #include "funcionalidades.h"
+#include "configuracion.h"
+#include "menu.h"
+#include "estadisticas.h"
 
 extern char nombreJugador [21];
 extern int animacion_borrado_activa;
 static int animacion_estaba_activa = 0;
 int pieza_fijada_sin_nueva = 0;
 
-int main ()
+// Parsea los argumentos de línea de comandos y los aplica a la config
+static void PARSEAR_ARGV(int argc, char *argv[], sConfig *c)
 {
-    char nombreVentana [128]; // Vector para el nombre de la ventana
-    
-    if (gbt_iniciar() != 0) // Iniciar la biblioteca GBT
+    for (int i = 1; i < argc; i++)
     {
-        fprintf (stderr, "Error al iniciar GBT: %s\n", gbt_obtener_log()); // Si falla en el inicio, lo indica
-        return -1;
-    }
-
-    sprintf (nombreVentana, "Tetris %dx%d", anchoVentana, altoVentana); // Pone el nombre Tetris en la ventana con las medidas de la misma
-
-    if (gbt_crear_ventana (nombreVentana, anchoVentana, altoVentana, escalaVentana) != 0) // Crea la ventana
-    {
-        fprintf (stderr, "Error al iniciar el modulo de graficos de GBT: %s\n", gbt_obtener_log()); // Si falla en la creación, lo indica
-        return -1;
-    }
-
-    if (gbt_aplicar_paleta (paletaCGA, cantColores, GBT_FORMATO_888) != 0) // Aplica la paleta de colores definida
-    {
-        fprintf (stderr, "Error al aplicar la nueva paleta de colores: %s\n", gbt_obtener_log()); // Si falla la aplicación de la paleta, lo indica
-        return -1;
-    }
-
-    DIBUJARINICIO (nombreJugador);
-    srand (time (0)); // Para randomizar
-    NUEVAPIEZA (); // Obtiene pieza nueva
-    double duracion_actual = duracion_caida;
-    tGBT_Temporizador *timer_caida = gbt_temporizador_crear (duracion_actual); // Temporizador para limitar la velocidad del juego
-    if (!timer_caida)
-    {
-        fprintf (stderr, "Error al crear temporizador: %s\n", gbt_obtener_log()); // Si falla en la creación, lo indica
-        return -1;
-    }
-    tGBT_Temporizador *timer_mov = gbt_temporizador_crear(0.1); // Temporizador para limitar la velocidad de movimiento
-    if (!timer_mov)
-    {
-        fprintf (stderr, "Error al crear temporizador: %s\n", gbt_obtener_log()); // Si falla en la creación, lo indica
-        return -1;
-    }
-    tGBT_Temporizador *timer_fijacion = NULL;
-
-    uint8_t corriendo = 1; // Define el estado corriendo
-
-    while (corriendo) // Mientras esté funcionando
-    {
-        gbt_procesar_entrada (); // Procesa la entrada de teclas
-        if (gbt_tecla_sostenida (GBTK_ESCAPE)) // Verifica input de la tecla Escape
+        if (strcmp(argv[i], "-cga") == 0)
+            c->resolucion = RESOLUCION_CGA;
+        else if (strcmp(argv[i], "-vga") == 0)
+            c->resolucion = RESOLUCION_VGA;
+        else if (strcmp(argv[i], "-escala") == 0 && i + 1 < argc)
         {
-            corriendo = 0;
-            printf ("Saliendo del juego\n");
+            int escala = atoi(argv[i + 1]);
+            if (escala >= 1 && escala <= 4)
+                c->escala = escala;
+            i++; // Saltar el siguiente argumento (el valor de escala)
         }
-        else 
+    }
+}
+
+int main (int argc, char *argv[])
+{
+    char nombreVentana [128];
+
+    // 1. Iniciar GBT
+    if (gbt_iniciar() != 0)
+    {
+        fprintf(stderr, "Error al iniciar GBT: %s\n", gbt_obtener_log());
+        return -1;
+    }
+
+    // 2. Cargar configuración (o usar defaults si no existe config.dat)
+    if (CONFIG_CARGAR(&config_actual) != 0)
+        CONFIG_DEFAULTS(&config_actual);
+
+    // 3. Aplicar argumentos de línea de comandos (sobreescriben config)
+    PARSEAR_ARGV(argc, argv, &config_actual);
+
+    // 4. Crear ventana con la resolución y escala de la config
+    sprintf(nombreVentana, "Tetris %dx%d", CONFIG_ANCHO(), CONFIG_ALTO());
+    if (gbt_crear_ventana(nombreVentana, CONFIG_ANCHO(), CONFIG_ALTO(), config_actual.escala) != 0)
+    {
+        fprintf(stderr, "Error al crear ventana: %s\n", gbt_obtener_log());
+        return -1;
+    }
+
+    // 5. Aplicar paleta y velocidad inicial de la config
+    CONFIG_APLICAR(&config_actual);
+
+    srand(time(0));
+
+    // 6. Bucle del menú principal
+    while (1)
+    {
+        eMenuResultado resultado = MENU_PRINCIPAL();
+        if (resultado == MENU_RESULTADO_SALIR)
+            break;
+
+        // -- JUGAR --
+        // Pantalla de ingreso de nombre
+        DIBUJARINICIO(nombreJugador);
+
+        // Reiniciar estado del juego
+        REINICIARJUEGO();
+        pieza_fijada_sin_nueva = 0;
+        animacion_estaba_activa = 0;
+
+        // Aplicar velocidad inicial de la config al juego
+        duracion_caida = velocidades_disponibles[config_actual.velocidad_inicial];
+
+        NUEVAPIEZA();
+        double duracion_actual = duracion_caida;
+
+        tGBT_Temporizador *timer_caida = gbt_temporizador_crear(duracion_actual);
+        if (!timer_caida)
         {
-            if (estado_juego == ESTADO_RUNNING && !animacion_borrado_activa)
+            fprintf(stderr, "Error al crear temporizador: %s\n", gbt_obtener_log());
+            return -1;
+        }
+        tGBT_Temporizador *timer_mov = gbt_temporizador_crear(0.1);
+        if (!timer_mov)
+        {
+            fprintf(stderr, "Error al crear temporizador: %s\n", gbt_obtener_log());
+            return -1;
+        }
+        tGBT_Temporizador *timer_fijacion = NULL;
+
+        uint8_t corriendo = 1;
+        int salir_juego = 0; // 1 = Q presionado, salir del programa completo
+
+        while (corriendo)
+        {
+            gbt_procesar_entrada();
+
+            if (gbt_tecla_sostenida(GBTK_q))
             {
-                if (gbt_tecla_presionada (GBTK_p)) // Input tecla P para pausar
-                {
-                    estado_juego = ESTADO_PAUSED;
-                }
-
-                if (gbt_tecla_presionada (GBTK_d)) // Input tecla D para girar sentido horario
-                {
-                    ROTARHORARIO ();
-                }
-                if (gbt_tecla_presionada (GBTK_a)) // Input tecla A para girar sentido antihorario
-                {
-                    ROTARANTIHORARIO ();
-                }
-                if (gbt_temporizador_consumir(timer_mov))
-                {
-                    if (gbt_tecla_sostenida (GBTK_IZQUIERDA) && !COLISION (actual.fila, actual.columna - 1, actual.forma)) // Verifica input de flecha izquierda y colisión
-                    {
-                        actual.columna --;
-                    }
-                    if (gbt_tecla_sostenida (GBTK_DERECHA) && !COLISION (actual.fila, actual.columna + 1, actual.forma)) // Verifica input de flecha derecha y colisión
-                    {
-                        actual.columna ++;
-                    }
-                    if (gbt_tecla_sostenida (GBTK_ABAJO) && !COLISION (actual.fila + 1, actual.columna, actual.forma)) // Verifica input de flecha abajo y colisión
-                    {
-                        actual.fila ++;
-                        int multiplicador = (nivel / 2) + 1;
-                        if (multiplicador > 5) multiplicador = 5;
-
-                        int bonus_velocidad = (int)((1.0 - duracion_caida) * 10);
-                        if (bonus_velocidad < 0) bonus_velocidad = 0;
-
-                        puntaje += multiplicador + bonus_velocidad;
-                    }
-
-                    if (COLISION (actual.fila + 1, actual.columna, actual.forma)) // Verifica si la pieza está en el suelo
-                    {
-                        if (timer_fijacion == NULL)
-                        {
-                            timer_fijacion = gbt_temporizador_crear (duracion_caida * 0.5); // 50% de velocidad de caida
-                        }
-
-                        if (gbt_temporizador_consumir (timer_fijacion))
-                        {
-                            FIJARPIEZA (); // Fija la pieza
-                            LIMPIARLINEAS (); // Si se completó una fila, la limpia
-                            /*
-                            if (!animacion_borrado_activa)
-                                NUEVAPIEZA (); // Obtiene nueva pieza
-                            */
-                           pieza_fijada_sin_nueva = 1;
-                            gbt_temporizador_destruir (timer_fijacion);
-                            timer_fijacion = NULL;
-                            
-                            // Si la duración cambió en NUEVAPIEZA, recrear el temporizador de caída
-                            if (duracion_actual != duracion_caida)
-                            {
-                                gbt_temporizador_destruir (timer_caida);
-                                timer_caida = gbt_temporizador_crear (duracion_caida);
-                                duracion_actual = duracion_caida;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (timer_fijacion != NULL)
-                        {
-                            gbt_temporizador_destruir (timer_fijacion);
-                            timer_fijacion = NULL;
-                        }
-
-                        if (gbt_temporizador_consumir (timer_caida))
-                        {
-                            actual.fila ++; // Baja la pieza una fila si no hubo colisión
-                        }
-                    }
-                }
-            }
-            else if (estado_juego == ESTADO_PAUSED)
-            {
-                if (gbt_tecla_presionada (GBTK_p)) // Volver al juego
-                {
-                    estado_juego = ESTADO_RUNNING;
-                }
-            }
-            else if (estado_juego == ESTADO_GAMEOVER)
-            {
-                if (gbt_tecla_presionada (GBTK_r)) // Reiniciar juego
-                {
-                    REINICIARJUEGO();
-                    // Asegurarse de que el temporizador de caída esté sincronizado
-                    gbt_temporizador_destruir (timer_caida);
-                    timer_caida = gbt_temporizador_crear (duracion_caida);
-                    duracion_actual = duracion_caida;
-                    if (timer_fijacion) {
-                        gbt_temporizador_destruir(timer_fijacion);
-                        timer_fijacion = NULL;
-                    }
-                }
-            }
-
-            ACTUALIZAR_ANIMACION_BORRADO();
-            if (pieza_fijada_sin_nueva && !animacion_borrado_activa)
-            {
-                NUEVAPIEZA();
-                pieza_fijada_sin_nueva = 0;
-                animacion_estaba_activa = 0;
+                salir_juego = 1;
+                corriendo = 0; // Salir de la partida
             }
             else
             {
-                animacion_estaba_activa = animacion_borrado_activa;
-            }
-            DIBUJAR (); // Dibuja los gráficos (incluye tablero y pieza actual)
-            if (estado_juego == ESTADO_PAUSED) DIBUJARPAUSA();
-            if (estado_juego == ESTADO_GAMEOVER) DIBUJARGAMEOVER();
+                if (estado_juego == ESTADO_RUNNING && !animacion_borrado_activa)
+                {
+                    if (gbt_tecla_presionada(GBTK_p))
+                        estado_juego = ESTADO_PAUSED;
 
-            gbt_volcar_backbuffer (); // Vuelca los gráficos en la ventana 
-            gbt_esperar (16); // Espera 16 ms para evitar que el juego se vea demasiado rápido
+                    if (gbt_tecla_presionada(GBTK_d))
+                        ROTARHORARIO();
+                    if (gbt_tecla_presionada(GBTK_a))
+                        ROTARANTIHORARIO();
+
+                    if (gbt_temporizador_consumir(timer_mov))
+                    {
+                        if (gbt_tecla_sostenida(GBTK_IZQUIERDA) && !COLISION(actual.fila, actual.columna - 1, actual.forma))
+                            actual.columna--;
+                        if (gbt_tecla_sostenida(GBTK_DERECHA) && !COLISION(actual.fila, actual.columna + 1, actual.forma))
+                            actual.columna++;
+                        if (gbt_tecla_sostenida(GBTK_ABAJO) && !COLISION(actual.fila + 1, actual.columna, actual.forma))
+                        {
+                            actual.fila++;
+                            int mult = (nivel / 2) + 1;
+                            if (mult > 5) mult = 5;
+                            int bonus = (int)((1.0 - duracion_caida) * 10);
+                            if (bonus < 0) bonus = 0;
+                            puntaje += mult + bonus;
+                        }
+
+                        if (COLISION(actual.fila + 1, actual.columna, actual.forma))
+                        {
+                            if (timer_fijacion == NULL)
+                                timer_fijacion = gbt_temporizador_crear(duracion_caida * 0.5);
+
+                            if (gbt_temporizador_consumir(timer_fijacion))
+                            {
+                                FIJARPIEZA();
+                                LIMPIARLINEAS();
+                                pieza_fijada_sin_nueva = 1;
+
+                                gbt_temporizador_destruir(timer_fijacion);
+                                timer_fijacion = NULL;
+
+                                if (duracion_actual != duracion_caida)
+                                {
+                                    gbt_temporizador_destruir(timer_caida);
+                                    timer_caida = gbt_temporizador_crear(duracion_caida);
+                                    duracion_actual = duracion_caida;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (timer_fijacion != NULL)
+                            {
+                                gbt_temporizador_destruir(timer_fijacion);
+                                timer_fijacion = NULL;
+                            }
+                            if (gbt_temporizador_consumir(timer_caida))
+                                actual.fila++;
+                        }
+                    }
+                }
+                else if (estado_juego == ESTADO_PAUSED)
+                {
+                    if (gbt_tecla_presionada(GBTK_p))
+                        estado_juego = ESTADO_RUNNING;
+                }
+                else if (estado_juego == ESTADO_GAMEOVER)
+                {
+                    // Guardar estadística al terminar la partida
+                    static int ya_guardo = 0;
+                    if (!ya_guardo)
+                    {
+                        STATS_GUARDAR(nombreJugador, puntaje);
+                        ya_guardo = 1;
+                    }
+
+                    if (gbt_tecla_presionada(GBTK_r))
+                    {
+                        ya_guardo = 0;
+                        REINICIARJUEGO();
+                        duracion_caida = velocidades_disponibles[config_actual.velocidad_inicial];
+                        gbt_temporizador_destruir(timer_caida);
+                        timer_caida = gbt_temporizador_crear(duracion_caida);
+                        duracion_actual = duracion_caida;
+                        pieza_fijada_sin_nueva = 0;
+                        if (timer_fijacion)
+                        {
+                            gbt_temporizador_destruir(timer_fijacion);
+                            timer_fijacion = NULL;
+                        }
+                    }
+                    if (gbt_tecla_presionada(GBTK_ENTER) || gbt_tecla_presionada(GBTK_ESCAPE))
+                    {
+                        ya_guardo = 0;
+                        corriendo = 0; // Volver al menú
+                    }
+                }
+
+                ACTUALIZAR_ANIMACION_BORRADO();
+                if (pieza_fijada_sin_nueva && !animacion_borrado_activa)
+                {
+                    NUEVAPIEZA();
+                    pieza_fijada_sin_nueva = 0;
+                    animacion_estaba_activa = 0;
+                }
+                else
+                {
+                    animacion_estaba_activa = animacion_borrado_activa;
+                }
+
+                DIBUJAR();
+                if (estado_juego == ESTADO_PAUSED)   DIBUJARPAUSA();
+                if (estado_juego == ESTADO_GAMEOVER) DIBUJARGAMEOVER();
+
+                gbt_volcar_backbuffer();
+                gbt_esperar(16);
+            }
         }
+
+        // Limpiar temporizadores al salir de la partida
+        gbt_temporizador_destruir(timer_caida);
+        gbt_temporizador_destruir(timer_mov);
+        if (timer_fijacion) gbt_temporizador_destruir(timer_fijacion);
+
+        // Si Q fue presionado durante la partida, salir del programa
+        if (salir_juego) break;
     }
-    gbt_destruir_ventana (); // Destruye la ventana creada
-    gbt_temporizador_destruir (timer_caida); // Destruye el temporizador de la caída
-    gbt_temporizador_destruir (timer_mov); // Destruye el temporizador del movimiento de las piezas
-    if (timer_fijacion) gbt_temporizador_destruir(timer_fijacion);
-    gbt_cerrar (); // Cierra la biblioteca GBT
+
+    gbt_destruir_ventana();
+    gbt_cerrar();
     return 0;
 }
