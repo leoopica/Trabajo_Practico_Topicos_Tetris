@@ -240,8 +240,14 @@ void DIBUJARPROXIMA ()
     int f, c, px, py, x0, y0;
     int colorBase, colorFinal, pixelX, pixelY;
 
+    // Posición del panel NEXT (a la izquierda del tablero)
     x0 = offsetHorizontal - 80;
     y0 = offsetVertical;
+
+    // Recuadro y fondo del panel NEXT
+    int anchoPanel = 4 * tamMino + 16; // 4 minos + padding
+    int altoPanel  = 4 * tamMino + 26; // texto + 4 minos + padding
+    DIBUJARMARCOGENERICO(x0 - 4, y0 - 4, anchoPanel, altoPanel, 0);
 
     DIBUJARTEXTO(x0, y0, "NEXT", anchoCaracter8);
 
@@ -249,7 +255,26 @@ void DIBUJARPROXIMA ()
     {
         return;
     }
-    // Dibujar miniatura de la próxima pieza
+
+    // Calcular bounding box de la pieza para centrarla en el panel
+    int minC = 4, maxC = -1, minF = 4, maxF = -1;
+    for (f = 0; f < 4; f++)
+        for (c = 0; c < 4; c++)
+            if (proxima.forma[f][c] == 1)
+            {
+                if (c < minC) minC = c;
+                if (c > maxC) maxC = c;
+                if (f < minF) minF = f;
+                if (f > maxF) maxF = f;
+            }
+
+    int anchoInterior = anchoPanel - 16; // interior del panel (sin padding)
+    int anchoPieza = (maxC - minC + 1) * tamMino;
+    int altoPieza  = (maxF - minF + 1) * tamMino;
+    int offsetX = (anchoInterior - anchoPieza) / 2 - minC * tamMino;
+    int offsetY = (anchoInterior - altoPieza)  / 2 - minF * tamMino;
+
+    // Dibujar miniatura de la próxima pieza centrada
     for (f = 0; f < 4; f++)
     {
         for (c = 0; c < 4; c++)
@@ -257,8 +282,8 @@ void DIBUJARPROXIMA ()
             if (proxima.forma[f][c] == 1)
             {
                 colorBase = proxima.color;
-                px = x0 + c * tamMino;
-                py = y0 + 15 + f * tamMino;
+                px = x0 + offsetX + c * tamMino;
+                py = y0 + 15 + offsetY + f * tamMino;
 
                 for (pixelY = 0; pixelY <= tamMino; pixelY++)
                 {
@@ -319,7 +344,7 @@ void DIBUJARPAUSA ()
     DIBUJARMARCOGENERICO(x0, y0, anchoCaja, altoCaja, 0);
 
     char *linea1 = "PAUSA";
-    char *linea2 = "PRESIONE P PARA VOLVER";
+    char *linea2 = "P CONTINUAR   Q SALIR";
 
     DIBUJARTEXTO(centroX - ((int)strlen(linea1) * anchoCaracter8) / 2, y0 + 10, linea1, anchoCaracter8);
     DIBUJARTEXTO(centroX - ((int)strlen(linea2) * anchoCaracter8) / 2, y0 + 30, linea2, anchoCaracter8);
@@ -327,9 +352,9 @@ void DIBUJARPAUSA ()
 
 void DIBUJARGAMEOVER ()
 {
-    // Tamaño de la caja negra (modificá estos valores para cambiar el tamaño)
-    int anchoCaja = 160;
-    int altoCaja  = 160;
+    // La línea más larga "ENTER MENU PRINCIPAL" = 20*8 = 160px + padding -> 180px
+    int anchoCaja = 180;
+    int altoCaja  = 90;
 
     // Centro de la ventana
     int centroX = anchoVentana / 2;
@@ -339,34 +364,29 @@ void DIBUJARGAMEOVER ()
     int x0 = centroX - anchoCaja / 2;
     int y0 = centroY - altoCaja  / 2;
 
-    // Esquina superior derecha de la caja
-    int xF = centroX + anchoCaja / 2;
-    int yF = centroY + altoCaja  / 2;
-
     // Dibuja el marco con fondo negro
     DIBUJARMARCOGENERICO(x0, y0, anchoCaja, altoCaja, 0);
-
-    // Helper local: calcula la X centrada según la longitud del texto
-    // (lo dejo inline con strlen para mayor claridad)
 
     char puntajeFinal[32];
     sprintf(puntajeFinal, "SCORE %d", puntaje);
 
     char *linea1 = "GAME OVER";
     char *linea2 = puntajeFinal;
-    char *linea3 = "R PARA REINICIAR";
-    char *linea4 = "ESC PARA SALIR";
+    char *linea3 = "R     REINICIAR";
+    char *linea4 = "ENTER MENU PRINCIPAL";
+    char *linea5 = "Q     SALIR";
 
-    // Posiciones Y separadas uniformemente dentro de la caja
-    int y1 = y0 + 10;
-    int y2 = y0 + 30;
-    int y3 = yF - 30;
-    int y4 = yF - 15;
+    int y1 = y0 + 8;
+    int y2 = y0 + 22;
+    int y3 = y0 + 42;
+    int y4 = y0 + 55;
+    int y5 = y0 + 68;
 
     DIBUJARTEXTO(centroX - ((int)strlen(linea1) * anchoCaracter8) / 2, y1, linea1, anchoCaracter8);
     DIBUJARTEXTO(centroX - ((int)strlen(linea2) * anchoCaracter8) / 2, y2, linea2, anchoCaracter8);
     DIBUJARTEXTO(centroX - ((int)strlen(linea3) * anchoCaracter8) / 2, y3, linea3, anchoCaracter8);
     DIBUJARTEXTO(centroX - ((int)strlen(linea4) * anchoCaracter8) / 2, y4, linea4, anchoCaracter8);
+    DIBUJARTEXTO(centroX - ((int)strlen(linea5) * anchoCaracter8) / 2, y5, linea5, anchoCaracter8);
 }
 
 void DIBUJARINICIO(char *nombre) // PONER COMENTARIOS
@@ -404,7 +424,7 @@ void DIBUJARINICIO(char *nombre) // PONER COMENTARIOS
             }
             else if (tecla >= 'a' && tecla <= 'z')
             {
-                if (i < 21 - 1)
+                if (i < 13)
                 {
                     nombre[i] = tecla - 32; // mayúscula
                     i++;
@@ -413,7 +433,7 @@ void DIBUJARINICIO(char *nombre) // PONER COMENTARIOS
             }
             else if (tecla >= '0' && tecla <= '9')
             {
-                if (i < 21 - 1)
+                if (i < 13)
                 {
                     nombre[i] = tecla;
                     i++;
@@ -422,7 +442,7 @@ void DIBUJARINICIO(char *nombre) // PONER COMENTARIOS
             }
             else if (tecla == GBTK_ESPACIO)
             {
-                if (i < 21 - 1 && i > 0)
+                if (i < 13 && i > 0)
                 {
                     nombre[i] = ' ';
                     i++;
@@ -435,20 +455,21 @@ void DIBUJARINICIO(char *nombre) // PONER COMENTARIOS
         gbt_borrar_backbuffer(0);
         DIBUJARFONDO();
 
-        // // 🔥 TETRIS
-        DIBUJAR_LOGO_COMPLETO(69, 15);
+        // Logo TETRIS centrado horizontalmente
+        // El logo mide 167px de ancho
+        DIBUJAR_LOGO_COMPLETO((anchoVentana - 167) / 2, 15);
 
-        // Texto
-        DIBUJARTEXTO(80, 140, "INGRESE SU NOMBRE:", anchoCaracter8);
+        // Texto centrado
+        DIBUJARTEXTO((anchoVentana - 18 * anchoCaracter8) / 2, 140, "INGRESE SU NOMBRE:", anchoCaracter8);
 
-        // Nombre
-        DIBUJARTEXTO(80, 160, nombre, anchoCaracter8);
+        // Nombre centrado
+        DIBUJARTEXTO((anchoVentana - 13 * anchoCaracter8) / 2, 160, nombre, anchoCaracter8);
 
         // Cursor
-        if (i < 21 - 1)
+        if (i < 13)
         {
             DIBUJARCARACTER(
-                80 + i * anchoCaracter8,
+                (anchoVentana - 13 * anchoCaracter8) / 2 + i * anchoCaracter8,
                 160,
                 37, // índice del carácter "_"
                 anchoCaracter8,
