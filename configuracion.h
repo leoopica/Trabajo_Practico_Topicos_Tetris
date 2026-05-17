@@ -25,12 +25,18 @@
 extern float velocidades_disponibles [CANT_VELOCIDADES];
 extern const char* nombres_velocidades [CANT_VELOCIDADES];
 
+// Modos de juego
+#define MODO_CLASICO 0
+#define MODO_DX 1
+
 // Estructura de configuración
 typedef struct {
     int resolucion; // RESOLUCION_CGA o RESOLUCION_VGA
     int escala; // Factor de escala de la ventana
     int paleta; // PALETA_CGA, PALETA_GAMEBOY, PALETA_NES
     int velocidad_inicial; // Índice en velocidades_disponibles
+    int modo_juego; // MODO_CLASICO o MODO_DX
+    int ancho_tablero; // Ancho del tablero (8-16, solo DX)
 } sConfig;
 
 // Paletas de colores

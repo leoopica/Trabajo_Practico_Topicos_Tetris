@@ -1,12 +1,14 @@
 #include "funcionalidades.h"
+#include "configuracion.h"
 #include <stdlib.h>
 #define duracion_animacion 4
 
 // Tablero implementado como array de punteros a filas (requisito de promoción)
 // En lugar de int tablero[20][10], usamos int **tablero donde cada fila es un puntero independiente.
 // Esto permite limpiar líneas completas con solo intercambiar punteros (sin copiar memoria).
+int columnasTablero = 10; // Ancho real del tablero (por defecto clásico)
 int *filas_tablero[filasTablero]; // Array de punteros (uno por fila)
-int celdas_tablero[filasTablero][columnasTablero]; // Memoria real de las celdas
+int celdas_tablero[filasTablero][MAX_COLUMNAS]; // Memoria real de las celdas
 int **tablero = NULL; // Puntero al array de punteros (para acceso como tablero[f][c])
 
 // Inicializa el tablero dinámico: apunta cada fila al bloque de celdas correspondiente
@@ -23,11 +25,6 @@ static void INIT_TABLERO(void)
 
 // Inicialización automática al arrancar (tablero apuntado correctamente desde el inicio)
 static int tablero_inicializado = 0;
-static void ASEGURAR_TABLERO(void)
-{
-    if (!tablero_inicializado) { INIT_TABLERO(); tablero_inicializado = 1; }
-}
-
 //Definición del estado inicial del juego
 int puntaje = 0;
 int nivel = 1;
@@ -41,24 +38,21 @@ int filas_a_borrar[MAX_FILAS_BORRAR];
 int cant_filas_borrar;
 int animacion_borrado_activa = 0;
 int animacion_frame;
-
-/*
- *------------------------*
- *---------PIEZAS---------*
- *------------------------*
- */
+int piezas_en_uso = 7; // Por defecto modo clásico (7 piezas)
+int cheat_activo = 0;
+double cheat_tiempo_restante = 0.0;
+double cheat_cooldown_restante = 0.0;
 sPieza actual;
 sPieza proxima;
 
-// Sistema de 7-bag
-int bolsa [7];
-int bolsaIndice = 7; // Forzamos llenado inicial
+int bolsa[MAX_PIEZAS];
+int bolsaIndice = MAX_PIEZAS; // Forzamos llenado inicial
 
 void LLENARBOLSA ()
 {
     int i, j, temp;
-    for (i = 0; i < 7; i++) bolsa[i] = i;
-    for (i = 6; i > 0; i--)
+    for (i = 0; i < piezas_en_uso; i++) bolsa[i] = i;
+    for (i = piezas_en_uso - 1; i > 0; i--)
     {
         j = rand() % (i + 1);
         temp = bolsa[i];
@@ -70,13 +64,13 @@ void LLENARBOLSA ()
 
 int OBTENERPIEZABOLSA ()
 {
-    if (bolsaIndice >= 7) LLENARBOLSA();
+    if (bolsaIndice >= piezas_en_uso) LLENARBOLSA();
     return bolsa[bolsaIndice++];
 }
 
 void INICIALIZARPIEZA (sPieza *p, int tipo)
 {
-    int colorPiezas [cantPiezas] = {11, 9, 6, 14, 10, 13, 12};
+    int colorPiezas [MAX_PIEZAS] = {11, 9, 6, 14, 10, 13, 12, 11, 11, 11, 11};
     p->tipo = tipo;
     p->rotacion = 0;
     COPIARPIEZA (p->forma, piezas [tipo]);
@@ -87,7 +81,6 @@ void INICIALIZARPIEZA (sPieza *p, int tipo)
 
 void REINICIARJUEGO ()
 {
-    int f, c;
     INIT_TABLERO(); // Reinicializar punteros y limpiar tablero
     tablero_inicializado = 1;
     puntaje = 0;
@@ -96,6 +89,9 @@ void REINICIARJUEGO ()
     piezas_caidas = 0;
     duracion_caida = 1.0;
     velocidad = 1;
+    cheat_activo = 0;
+    cheat_tiempo_restante = 0.0;
+    cheat_cooldown_restante = 0.0;
     estado_juego = ESTADO_RUNNING;
     bolsaIndice = 7; // Forzar llenado de bolsa
     INICIALIZARPIEZA(&actual, OBTENERPIEZABOLSA());
@@ -155,10 +151,25 @@ int COLISION (int filaNueva, int columnaNueva, int forma [4][4])
                 fTablero = filaNueva + filaPieza; // Pone la pieza en el tablero
                 cTablero = columnaNueva + columnaPieza; // Pone la pieza en el tablero
 
-                // Permitir que la pieza esté por encima del tablero (fTablero < 0), pero no por debajo ni a los costados
-                if (fTablero >= filasTablero || cTablero < 0 || cTablero >= columnasTablero)
+                // Límite inferior: siempre colisión
+                if (fTablero >= filasTablero)
                 {
-                    return 1; // Colisión con bordes
+                    return 1;
+                }
+
+                // Tablero circular (solo en modo DX): wrappear coordenada horizontal
+                if (config_actual.modo_juego == MODO_DX)
+                {
+                    if (cTablero < 0) cTablero += columnasTablero;
+                    if (cTablero >= columnasTablero) cTablero -= columnasTablero;
+                }
+                else
+                {
+                    // Modo clásico: rechazar bordes laterales
+                    if (cTablero < 0 || cTablero >= columnasTablero)
+                    {
+                        return 1;
+                    }
                 }
 
                 if (fTablero >= 0 && tablero [fTablero][cTablero] != 0) // Evalua colisión con otros bloques
@@ -182,6 +193,14 @@ void FIJARPIEZA ()
             {
                 fTablero = actual.fila + filaPieza;
                 cTablero = actual.columna + columnaPieza;
+
+                // Tablero circular en modo DX: wrappear coordenada horizontal
+                if (config_actual.modo_juego == MODO_DX)
+                {
+                    if (cTablero < 0) cTablero += columnasTablero;
+                    if (cTablero >= columnasTablero) cTablero -= columnasTablero;
+                }
+
                 if (fTablero >= 0 && fTablero < filasTablero && cTablero >= 0 && cTablero < columnasTablero)
                 {
                     tablero [fTablero][cTablero] = actual.color; // Si hay un mino y está dentro del tablero, lo fija
@@ -290,10 +309,10 @@ void APLICAR_ROTACION (int sentido) // 1 horario, -1 antihorario
     int i, j, test;
     int nueva_rotacion = (actual.rotacion + sentido + 4) % 4;
     int temporal [4][4];
-    int size = (actual.tipo == 0) ? 4 : (actual.tipo == 3 ? 2 : 3);
+    int size = (actual.tipo == 0) ? 4 : (actual.tipo == 3 || actual.tipo == 7) ? 2 : 3;
 
-    // Si es pieza O (tipo 3), no rota físicamente
-    if (actual.tipo == 3) {
+    // Si es pieza O (tipo 3) o x (tipo 7), no rota físicamente
+    if (actual.tipo == 3 || actual.tipo == 7) {
         actual.rotacion = nueva_rotacion;
         return;
     }
@@ -332,6 +351,11 @@ void APLICAR_ROTACION (int sentido) // 1 horario, -1 antihorario
         if (COLISION(actual.fila + dy, actual.columna + dx, temporal) == 0) {
             actual.fila += dy;
             actual.columna += dx;
+            if (config_actual.modo_juego == MODO_DX)
+            {
+                if (actual.columna < 0) actual.columna += columnasTablero;
+                if (actual.columna >= columnasTablero) actual.columna -= columnasTablero;
+            }
             actual.rotacion = nueva_rotacion;
             COPIARPIEZA(actual.forma, temporal);
             return;

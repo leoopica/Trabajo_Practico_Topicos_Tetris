@@ -4,8 +4,9 @@
 #include "sprites.h"
 
 #define filasTablero 20 // Define cantidad de filasTablero del tablero
-#define columnasTablero 10 // Define cantidad de columnasTablero del tablero
+#define MAX_COLUMNAS 16 // Máximo de columnas del tablero
 #define MAX_FILAS_BORRAR 4
+extern int columnasTablero; // Ancho real del tablero (8-16, variable)
 
 // Estructura para las piezas
 typedef struct
@@ -28,7 +29,7 @@ typedef enum {
 // tablero se implementa como array de punteros a filas (requisito de promoción):
 // filas_tablero[f] es un puntero a la f-ésima fila; tablero[f][c] accede a la celda normal.
 extern int *filas_tablero[filasTablero]; // Array de punteros (uno por fila)
-extern int celdas_tablero[filasTablero][columnasTablero]; // Memoria real
+extern int celdas_tablero[filasTablero][MAX_COLUMNAS]; // Memoria real
 extern int **tablero; // Puntero al array de punteros (acceso como tablero[f][c])
 extern sPieza actual;
 extern sPieza proxima;
@@ -44,6 +45,10 @@ extern int filas_a_borrar[MAX_FILAS_BORRAR];
 extern int cant_filas_borrar;
 extern int animacion_borrado_activa;
 extern int animacion_frame;
+extern int piezas_en_uso;
+extern int cheat_activo;
+extern double cheat_tiempo_restante;
+extern double cheat_cooldown_restante;
 
 void LLENARBOLSA ();
 int OBTENERPIEZABOLSA ();

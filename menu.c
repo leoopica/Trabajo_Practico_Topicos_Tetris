@@ -20,6 +20,11 @@ static const char* NOMBRES_RESOLUCIONES[2] = {
     "VGA 640X480",
 };
 
+static const char* NOMBRES_MODOS[2] = {
+    "CLASICO",
+    "DX",
+};
+
 // -------------------------------------------------------
 // Helpers internos de dibujo
 // -------------------------------------------------------
@@ -38,7 +43,7 @@ static void DIBUJAR_OPCION(int posY, const char *texto, int seleccionada)
         // Fondo resaltado: color 0 (negro en todas las paletas) para que contraste siempre
         DIBUJAR_RECTANGULO(posX - 4, posY - 1, largo * anchoCaracter8 + 8, altoCaracter + 2, COLOR_NEGRO);
         // Flecha indicadora: color 7 (gris claro/verde claro) para que sea visible en todas las paletas
-        DIBUJARCARACTER(posX - 12, posY, 17, anchoCaracter8, COLOR_GRIS_CLARO); // '>'  (R en la fuente)
+        DIBUJARCARACTER(posX - 12, posY, 23, anchoCaracter8, COLOR_GRIS_CLARO); // 'X' selector
         DIBUJARTEXTO(posX, posY, (char*)texto, anchoCaracter8);
     }
     else
@@ -176,8 +181,8 @@ eMenuResultado MENU_PRINCIPAL(void)
 void MENU_OPCIONES(void)
 {
     // Ítems configurables
-    const int CANT_ITEMS = 4;
-    // 0: Paleta, 1: Resolución, 2: Velocidad inicial, 3: Guardar y volver
+    const int CANT_ITEMS = 6;
+    // 0: Paleta, 1: Resolución, 2: Velocidad inicial, 3: Modo juego, 4: Ancho tablero, 5: Guardar y volver
     int seleccion = 0;
 
     int alto  = CONFIG_ALTO();
@@ -212,6 +217,13 @@ void MENU_OPCIONES(void)
                 config_temp.resolucion = (config_temp.resolucion - 1 + 2) % 2;
             else if (seleccion == 2) // Velocidad
                 config_temp.velocidad_inicial = (config_temp.velocidad_inicial - 1 + CANT_VELOCIDADES) % CANT_VELOCIDADES;
+            else if (seleccion == 3) // Modo juego
+                config_temp.modo_juego = (config_temp.modo_juego - 1 + 2) % 2;
+            else if (seleccion == 4) // Ancho tablero
+            {
+                config_temp.ancho_tablero--;
+                if (config_temp.ancho_tablero < 8) config_temp.ancho_tablero = MAX_COLUMNAS;
+            }
         }
         if (gbt_tecla_presionada(GBTK_DERECHA))
         {
@@ -221,14 +233,23 @@ void MENU_OPCIONES(void)
                 config_temp.resolucion = (config_temp.resolucion + 1) % 2;
             else if (seleccion == 2)
                 config_temp.velocidad_inicial = (config_temp.velocidad_inicial + 1) % CANT_VELOCIDADES;
+            else if (seleccion == 3) // Modo juego
+                config_temp.modo_juego = (config_temp.modo_juego + 1) % 2;
+            else if (seleccion == 4) // Ancho tablero
+            {
+                config_temp.ancho_tablero++;
+                if (config_temp.ancho_tablero > MAX_COLUMNAS) config_temp.ancho_tablero = 8;
+            }
         }
 
         // Confirmar / guardar
         if (gbt_tecla_presionada(GBTK_ENTER))
         {
-            if (seleccion == 3) // Guardar y volver
+            if (seleccion == 5) // Guardar y volver
             {
                 config_actual = config_temp;
+                piezas_en_uso = (config_actual.modo_juego == MODO_DX) ? MAX_PIEZAS : 7;
+                columnasTablero = (config_actual.modo_juego == MODO_DX) ? config_actual.ancho_tablero : 10;
                 CONFIG_GUARDAR(&config_actual);
                 CONFIG_APLICAR(&config_actual);
                 return;
@@ -274,8 +295,25 @@ void MENU_OPCIONES(void)
             DIBUJAR_OPCION(primerItemY + 2 * separacion, linea, seleccion == 2);
         }
 
-        // Ítem 3: Guardar y volver
-        DIBUJAR_OPCION(primerItemY + 3 * separacion, "GUARDAR Y VOLVER", seleccion == 3);
+        // Ítem 3: Modo juego
+        {
+            char linea[40];
+            sprintf(linea, "MODO    %s", NOMBRES_MODOS[config_temp.modo_juego]);
+            DIBUJAR_OPCION(primerItemY + 3 * separacion, linea, seleccion == 3);
+        }
+
+        // Ítem 4: Ancho tablero (solo editable en modo DX)
+        {
+            char linea[40];
+            if (config_temp.modo_juego == MODO_DX)
+                sprintf(linea, "ANCHO   %d", config_temp.ancho_tablero);
+            else
+                sprintf(linea, "ANCHO   10 (FIJO)");
+            DIBUJAR_OPCION(primerItemY + 4 * separacion, linea, seleccion == 4);
+        }
+
+        // Ítem 5: Guardar y volver
+        DIBUJAR_OPCION(primerItemY + 5 * separacion, "GUARDAR Y VOLVER", seleccion == 5);
 
         // Instrucción de escape
         DIBUJARTEXTO((ancho - (int)strlen("ESC VOLVER SIN GUARDAR") * anchoCaracter8) / 2,
@@ -393,49 +431,78 @@ void MENU_INSTRUCCIONES(void)
             return;
         }
 
-        // Recalcular resolución cada frame (puede cambiar desde opciones)
         int alto  = CONFIG_ALTO();
         int ancho = CONFIG_ANCHO();
 
         gbt_borrar_backbuffer(COLOR_NEGRO);
         DIBUJARFONDO();
 
-        // Título
-        int tituloX = (ancho - (int)strlen("INSTRUCCIONES") * anchoCaracter8) / 2;
-        DIBUJARTEXTO(tituloX, 20, "INSTRUCCIONES", anchoCaracter8);
+        // Secciones: objetivo (centrado individual) + controles (dos columnas)
+        const char *obj[] = { "OBJETIVO", "COMPLETAR FILAS SIN LLEGAR AL TOPE", "" };
+        int num_obj = sizeof(obj) / sizeof(obj[0]);
 
-        // Layout adaptable: 9 ítems (1 enc + 2 obj + 1 enc + 6 ctrl) + 1 separador = ~10 saltos
-        // En CGA área = 200-28-36 = 136px -> sep=13. En VGA área=416px -> sep=15 (cap).
-        int areaTop    = 36;
-        int areaBottom = alto - 28;
-        int areaAltura = areaBottom - areaTop;
-        int sep = areaAltura / 10;
-        if (sep < 10) sep = 10;
-        if (sep > 15) sep = 15;
+        const char *teclas[] = { "IZQ/DER", "ABAJO", "A", "D", "P", "C", "Q" };
+        const char *desc[]   = { "MOVER PIEZA", "BAJAR MAS RAPIDO", "ROTAR ANTIHORARIO",
+                                 "ROTAR HORARIO", "PAUSAR", "CHEAT (LENTITUD 5S)", "SALIR AL MENU" };
+        int filas = sizeof(teclas) / sizeof(teclas[0]);
 
-        int margen = (ancho - 28 * anchoCaracter8) / 2;
-        int y = areaTop;
+        const char *tit_ctrl = "CONTROLES";
 
-        DIBUJARTEXTO(margen, y, "OBJETIVO", anchoCaracter8);
-        y += sep;
-        DIBUJARTEXTO(margen, y, "COMPLETAR FILAS PARA GANAR", anchoCaracter8);
-        y += sep;
-        DIBUJARTEXTO(margen, y, "PUNTOS SIN LLEGAR AL TOPE.", anchoCaracter8);
-        y += sep + sep / 2;
+        int total_lineas = num_obj + 1 + filas; // obj + tit_ctrl + controles
+        int sep = (alto > 300) ? 12 : 6;
 
-        DIBUJARTEXTO(margen, y, "CONTROLES", anchoCaracter8);
-        y += sep;
-        DIBUJARTEXTO(margen, y, "IZQ DER  MOVER PIEZA", anchoCaracter8);
-        y += sep;
-        DIBUJARTEXTO(margen, y, "ABAJO    BAJAR MAS RAPIDO", anchoCaracter8);
-        y += sep;
-        DIBUJARTEXTO(margen, y, "A        ROTAR ANTIHORARIO", anchoCaracter8);
-        y += sep;
-        DIBUJARTEXTO(margen, y, "D        ROTAR HORARIO", anchoCaracter8);
-        y += sep;
-        DIBUJARTEXTO(margen, y, "P        PAUSAR", anchoCaracter8);
-        y += sep;
-        DIBUJARTEXTO(margen, y, "Q        SALIR AL MENU", anchoCaracter8);
+        // Calcular posición horizontal de las dos columnas de controles
+        int max_tecla = 0;
+        for (int i = 0; i < filas; i++)
+        {
+            int len = (int)strlen(teclas[i]);
+            if (len > max_tecla) max_tecla = len;
+        }
+        int max_desc = 0;
+        for (int i = 0; i < filas; i++)
+        {
+            int len = (int)strlen(desc[i]);
+            if (len > max_desc) max_desc = len;
+        }
+
+        int ancho_teclas = max_tecla * anchoCaracter8;
+        int ancho_desc   = max_desc * anchoCaracter8;
+        int gap = 16;
+        int ancho_total  = ancho_teclas + gap + ancho_desc;
+        int centro_cols  = (ancho - ancho_total) / 2;
+        int col_tecla_x  = centro_cols;
+        int col_desc_x   = centro_cols + ancho_teclas + gap;
+
+        // Posición vertical centrada
+        int alto_texto = total_lineas * (altoCaracter + sep) - sep;
+        int y_inicio = (alto - alto_texto) / 2;
+        int y = y_inicio;
+
+        // Dibujar sección objetivo
+        for (int i = 0; i < num_obj; i++)
+        {
+            if (obj[i][0] != '\0')
+            {
+                int x = (ancho - (int)strlen(obj[i]) * anchoCaracter8) / 2;
+                DIBUJARTEXTO(x, y, (char*)obj[i], anchoCaracter8);
+            }
+            y += altoCaracter + sep;
+        }
+
+        // Título CONTROLES centrado
+        {
+            int x = (ancho - (int)strlen(tit_ctrl) * anchoCaracter8) / 2;
+            DIBUJARTEXTO(x, y, (char*)tit_ctrl, anchoCaracter8);
+        }
+        y += altoCaracter + sep;
+
+        // Dibujar controles en dos columnas
+        for (int i = 0; i < filas; i++)
+        {
+            DIBUJARTEXTO(col_tecla_x, y, (char*)teclas[i], anchoCaracter8);
+            DIBUJARTEXTO(col_desc_x,  y, (char*)desc[i],   anchoCaracter8);
+            y += altoCaracter + sep;
+        }
 
         // Leyenda fija en el fondo
         int instrX = (ancho - (int)strlen("ENTER O ESC PARA VOLVER") * anchoCaracter8) / 2;

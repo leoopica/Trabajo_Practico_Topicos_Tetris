@@ -39,5 +39,7 @@ void DIBUJARTITULO ();
 void DIBUJARPAUSA ();
 void DIBUJARGAMEOVER ();
 void DIBUJARINICIO (char *nombre);
+void DIBUJARCHEAT ();
+void DIBUJARTEXTOPROP (int x, int y, const char *texto, int color);
 
 #endif // GRAFICOS_H_INCLUDED

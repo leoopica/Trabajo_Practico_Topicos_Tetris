@@ -59,6 +59,38 @@ int piezas [cantPiezas][4][4] =
         {0, 0, 0, 0},
         {0, 0, 0, 0},
     },
+
+    // Pieza x (Tipo 7) - 1 solo mino
+    {
+        {0, 0, 0, 0},
+        {0, 0, 0, 0},
+        {0, 0, 1, 0},
+        {0, 0, 0, 0},
+    },
+
+    // Pieza c (Tipo 8) - 5 minos en forma de C
+    {
+        {1, 1, 0, 0},
+        {1, 0, 0, 0},
+        {1, 1, 0, 0},
+        {0, 0, 0, 0},
+    },
+
+    // Pieza p (Tipo 9) - 5 minos en forma de P
+    {
+        {1, 1, 1, 0},
+        {1, 0, 1, 0},
+        {0, 0, 0, 0},
+        {0, 0, 0, 0},
+    },
+
+    // Pieza * (Tipo 10) - 5 minos en forma de cruz (asterisco)
+    {
+        {0, 1, 0, 0},
+        {1, 1, 1, 0},
+        {0, 1, 0, 0},
+        {0, 0, 0, 0},
+    },
 };
 
 // Definición de las letras y números en 8x8
@@ -982,4 +1014,48 @@ int fuente8x16 [cantCaracteres][altoCaracter][anchoCaracter16] =
         {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0},
     }
 };
+
+// Fuente proporcional: se genera automáticamente recortando fuente8x8
+int fuenteProp[cantCaracteres][altoCaracter][MAX_ANCHO_PROP] = {{{0}}};
+int anchoProp[cantCaracteres];
+
+void GENERAR_FUENTE_PROPORCIONAL(void)
+{
+    for (int c = 0; c < cantCaracteres; c++)
+    {
+        // Encontrar primera y última columna con píxeles
+        int izq = anchoCaracter8, der = -1;
+        for (int col = 0; col < anchoCaracter8; col++)
+        {
+            for (int fil = 0; fil < altoCaracter; fil++)
+            {
+                if (fuente8x8[c][fil][col] != 0)
+                {
+                    if (col < izq) izq = col;
+                    if (col > der) der = col;
+                    break;
+                }
+            }
+        }
+
+        int w;
+        if (der < izq)
+        {
+            // Carácter vacío (espacio)
+            w = (c == 36) ? 4 : 1;
+            izq = 0;
+        }
+        else
+        {
+            w = der - izq + 1;
+        }
+
+        anchoProp[c] = w;
+
+        // Copiar columnas recortadas
+        for (int fil = 0; fil < altoCaracter; fil++)
+            for (int col = 0; col < w && col < MAX_ANCHO_PROP; col++)
+                fuenteProp[c][fil][col] = (izq + col < anchoCaracter8) ? fuente8x8[c][fil][izq + col] : 0;
+    }
+}
 

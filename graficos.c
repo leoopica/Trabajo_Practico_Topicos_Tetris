@@ -44,6 +44,7 @@ void DIBUJAR ()
     DIBUJARGRILLA ();
     DIBUJARPUNTAJE ();
     DIBUJARPROXIMA ();
+    DIBUJARCHEAT ();
     DIBUJARTEXTO(offsetHorizontal + columnasTablero * tamMino + tamMino, offsetVertical + filasTablero * tamMino - 20 - 10, "PLAYER ", anchoCaracter8); // MODIFICAR PARA QUE SEA MÁS SIMPLE?
     DIBUJARTEXTO(offsetHorizontal + columnasTablero * tamMino + tamMino, offsetVertical + filasTablero * tamMino - 20, nombreJugador, anchoCaracter8); // MODIFICAR PARA QUE SEA MÁS SIMPLE?
 
@@ -61,7 +62,14 @@ void DIBUJAR ()
                     {
                         if (actual.forma [fPieza][cPieza] == 1) // Verifica si la matriz de la pieza tiene un mino en esa posición
                         {
-                            if (actual.fila + fPieza == fTablero && actual.columna + cPieza == cTablero) // Verifica si el mino en cuestión está en cierta posición del tablero
+                            int colPiezaMundo = actual.columna + cPieza;
+                            // Tablero circular en modo DX: wrappear coordenada horizontal
+                            if (config_actual.modo_juego == MODO_DX)
+                            {
+                                if (colPiezaMundo < 0) colPiezaMundo += columnasTablero;
+                                if (colPiezaMundo >= columnasTablero) colPiezaMundo -= columnasTablero;
+                            }
+                            if (actual.fila + fPieza == fTablero && colPiezaMundo == cTablero) // Verifica si el mino en cuestión está en cierta posición del tablero
                             {
                                 ocupado = actual.color; // Indica que está ocupado por la pieza
                             }
@@ -235,6 +243,52 @@ void DIBUJARTEXTO (int posXPantalla, int posYPantalla, char *texto, int anchoCar
     }
 }
 
+void DIBUJARCHEAT ()
+{
+    int ancho = (int)strlen("CHEAT") * anchoCaracter8;
+    int x0 = offsetHorizontal - 74;
+    int y0 = offsetVertical + 4 * tamMino + 26 + 10;
+    DIBUJAR_RECTANGULO(x0 - 2, y0 - 2, ancho + 4, altoCaracter + 4, COLOR_NEGRO);
+    int color = (cheat_cooldown_restante > 0.0 && !cheat_activo) ? 8 : 7;
+    const char *txt = "CHEAT";
+    for (int i = 0; txt[i] != '\0'; i++)
+    {
+        if (txt[i] >= 'A' && txt[i] <= 'Z')
+            DIBUJARCARACTER(x0 + i * anchoCaracter8, y0, txt[i] - 'A', anchoCaracter8, color);
+    }
+}
+
+void DIBUJARTEXTOPROP (int x, int y, const char *texto, int color)
+{
+    int px = x;
+    for (const char *p = texto; *p != '\0'; p++)
+    {
+        int idx = -1;
+        if (*p >= 'A' && *p <= 'Z')
+            idx = *p - 'A';
+        else if (*p >= '0' && *p <= '9')
+            idx = 26 + (*p - '0');
+        else if (*p == ' ')
+            idx = 36;
+        else if (*p == '_')
+            idx = 37;
+
+        if (idx >= 0)
+        {
+            int w = anchoProp[idx];
+            for (int fil = 0; fil < altoCaracter; fil++)
+                for (int col = 0; col < w; col++)
+                    if (fuenteProp[idx][fil][col])
+                        gbt_dibujar_pixel(px + col, y + fil, color);
+            px += w + 1; // +1 de interletrado
+        }
+        else
+        {
+            px += 5; // carácter desconocido
+        }
+    }
+}
+
 void DIBUJARPROXIMA ()
 {
     int f, c, px, py, x0, y0;
@@ -394,9 +448,6 @@ void DIBUJARINICIO(char *nombre) // PONER COMENTARIOS
     int i = 0;
     int terminado = 0;
     eGBT_Tecla tecla;
-
-    int colores[6] = {12, 9, 10, 14, 13, 11}; // colores para TETRIS
-    char titulo[] = "TETRIS";
 
     nombre[0] = '\0';
 

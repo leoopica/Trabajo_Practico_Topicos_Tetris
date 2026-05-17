@@ -1,12 +1,10 @@
 #include "archivos.h"
+#include "configuracion.h"
 #include <stdio.h>
 #include <string.h>
 
-// Variables externas del sistema de bolsa y tablero dinámico
-extern int bolsa[7];
+extern int bolsa[MAX_PIEZAS];
 extern int bolsaIndice;
-extern int *filas_tablero[filasTablero];
-extern int celdas_tablero[filasTablero][columnasTablero];
 
 int PARTIDA_EXISTE(void)
 {
@@ -40,11 +38,14 @@ int PARTIDA_GUARDAR(void)
     estado.nombreJugador[20] = '\0';
 
     // Guardar el sistema de bolsa
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < piezas_en_uso; i++)
         estado.bolsa[i] = bolsa[i];
     estado.bolsaIndice = bolsaIndice;
 
     estado.valido = 1;
+    estado.cantidad_piezas = piezas_en_uso;
+    estado.ancho_tablero = columnasTablero;
+    estado.modo_juego = config_actual.modo_juego;
 
     FILE *f = fopen(NOMBRE_ARCHIVO_PARTIDA, "wb");
     if (!f) return -1;
@@ -86,9 +87,23 @@ int PARTIDA_CARGAR(void)
     nombreJugador[20] = '\0';
 
     // Restaurar bolsa
-    for (int i = 0; i < 7; i++)
+    int piezas_guardadas = estado.cantidad_piezas;
+    if (piezas_guardadas < 7 || piezas_guardadas > MAX_PIEZAS)
+        piezas_guardadas = piezas_en_uso;
+    for (int i = 0; i < piezas_guardadas; i++)
         bolsa[i] = estado.bolsa[i];
     bolsaIndice = estado.bolsaIndice;
+
+    // Restaurar la cantidad de piezas activas al momento de guardar
+    piezas_en_uso = piezas_guardadas;
+
+    // Restaurar ancho del tablero
+    if (estado.ancho_tablero >= 8 && estado.ancho_tablero <= MAX_COLUMNAS)
+        columnasTablero = estado.ancho_tablero;
+
+    // Restaurar modo de juego para mantener circularidad del tablero
+    if (estado.modo_juego == MODO_CLASICO || estado.modo_juego == MODO_DX)
+        config_actual.modo_juego = estado.modo_juego;
 
     estado_juego = ESTADO_RUNNING;
     return 0;

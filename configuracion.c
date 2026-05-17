@@ -81,6 +81,8 @@ void CONFIG_DEFAULTS (sConfig *c)
     c->escala = 2;
     c->paleta = PALETA_CGA;
     c->velocidad_inicial = 0; // LENTA
+    c->modo_juego = MODO_CLASICO;
+    c->ancho_tablero = 10;
 }
 
 int CONFIG_GUARDAR (const sConfig *c)
@@ -127,6 +129,14 @@ int CONFIG_CARGAR (sConfig *c)
     {
         c->velocidad_inicial = 0;
     }
+    if (c->modo_juego < 0 || c->modo_juego > 1)
+    {
+        c->modo_juego = MODO_CLASICO;
+    }
+    if (c->ancho_tablero < 8 || c->ancho_tablero > MAX_COLUMNAS)
+    {
+        c->ancho_tablero = 10;
+    }
 
     return 0;
 }
@@ -138,6 +148,9 @@ void CONFIG_APLICAR (const sConfig *c)
     gbt_aplicar_paleta ((tGBT_ColorRGB*)paletas [c->paleta], 16, GBT_FORMATO_888); // Aplica la paleta seleccionada
 
     duracion_caida = velocidades_disponibles[c->velocidad_inicial]; // Aplica la velocidad inicial de caída
+
+    // Sincronizar ancho del tablero
+    columnasTablero = c->ancho_tablero;
 
     // Recrea la ventana con la nueva resolución y escala
     sprintf (nombreVentana, "Tetris %dx%d", CONFIG_ANCHO (), CONFIG_ALTO ());

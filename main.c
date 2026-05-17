@@ -53,6 +53,8 @@ static int JUGAR(int cargando)
             // Si falla la carga, iniciar nueva
             DIBUJARINICIO(nombreJugador);
             if (nombreJugador[0] == '\0') return 0; // ESC: volver al menú
+            columnasTablero = (config_actual.modo_juego == MODO_DX) ? config_actual.ancho_tablero : 10;
+            piezas_en_uso = (config_actual.modo_juego == MODO_DX) ? MAX_PIEZAS : 7;
             REINICIARJUEGO();
         }
     }
@@ -61,6 +63,8 @@ static int JUGAR(int cargando)
         // Nueva partida
         DIBUJARINICIO(nombreJugador);
         if (nombreJugador[0] == '\0') return 0; // ESC: volver al menú
+        columnasTablero = (config_actual.modo_juego == MODO_DX) ? config_actual.ancho_tablero : 10;
+        piezas_en_uso = (config_actual.modo_juego == MODO_DX) ? MAX_PIEZAS : 7;
         REINICIARJUEGO();
     }
 
@@ -126,12 +130,54 @@ static int JUGAR(int cargando)
                     if (gbt_tecla_presionada(GBTK_a))
                         ROTARANTIHORARIO();
 
+                    // Cheat: C activa lentitud 5s, cooldown 60s
+                    if (gbt_tecla_presionada(GBTK_c) && !cheat_activo && cheat_cooldown_restante <= 0.0)
+                    {
+                        cheat_activo = 1;
+                        cheat_tiempo_restante = 5.0;
+                        duracion_caida *= 3.0;
+                        duracion_actual = duracion_caida;
+                        gbt_temporizador_destruir(timer_caida);
+                        timer_caida = gbt_temporizador_crear(duracion_actual);
+                        if (timer_fijacion) { gbt_temporizador_destruir(timer_fijacion); timer_fijacion = NULL; }
+                    }
+                    if (cheat_activo)
+                    {
+                        cheat_tiempo_restante -= 0.016;
+                        if (cheat_tiempo_restante <= 0.0)
+                        {
+                            cheat_activo = 0;
+                            cheat_cooldown_restante = 60.0;
+                            duracion_caida /= 3.0;
+                            duracion_actual = duracion_caida;
+                            gbt_temporizador_destruir(timer_caida);
+                            timer_caida = gbt_temporizador_crear(duracion_actual);
+                            if (timer_fijacion) { gbt_temporizador_destruir(timer_fijacion); timer_fijacion = NULL; }
+                        }
+                    }
+                    if (cheat_cooldown_restante > 0.0)
+                        cheat_cooldown_restante -= 0.016;
+
                     if (gbt_temporizador_consumir(timer_mov))
                     {
                         if (gbt_tecla_sostenida(GBTK_IZQUIERDA) && !COLISION(actual.fila, actual.columna - 1, actual.forma))
+                        {
                             actual.columna--;
+                            if (config_actual.modo_juego == MODO_DX)
+                            {
+                                if (actual.columna < 0) actual.columna += columnasTablero;
+                                if (actual.columna >= columnasTablero) actual.columna -= columnasTablero;
+                            }
+                        }
                         if (gbt_tecla_sostenida(GBTK_DERECHA) && !COLISION(actual.fila, actual.columna + 1, actual.forma))
+                        {
                             actual.columna++;
+                            if (config_actual.modo_juego == MODO_DX)
+                            {
+                                if (actual.columna < 0) actual.columna += columnasTablero;
+                                if (actual.columna >= columnasTablero) actual.columna -= columnasTablero;
+                            }
+                        }
                         if (gbt_tecla_sostenida(GBTK_ABAJO) && !COLISION(actual.fila + 1, actual.columna, actual.forma))
                         {
                             actual.fila++;
@@ -237,6 +283,41 @@ static int JUGAR(int cargando)
     return salir_juego;
 }
 
+static void PANTALLA_PRESENTACION(void)
+{
+    while (1)
+    {
+        gbt_procesar_entrada();
+        if (gbt_tecla_presionada(GBTK_ENTER))
+            return;
+        if (gbt_tecla_sostenida(GBTK_q))
+            exit(0);
+
+        gbt_borrar_backbuffer(COLOR_NEGRO);
+        DIBUJARFONDO();
+
+        int logoX = (CONFIG_ANCHO() - 167) / 2;
+        int logoY = (CONFIG_ALTO() - 110) / 3;
+        DIBUJAR_LOGO_COMPLETO(logoX, logoY);
+
+        const char *msg = "PRESIONE ENTER";
+        int anchoMsg = 0;
+        for (const char *p = msg; *p; p++)
+        {
+            int idx = -1;
+            if (*p >= 'A' && *p <= 'Z') idx = *p - 'A';
+            else if (*p >= '0' && *p <= '9') idx = 26 + (*p - '0');
+            else if (*p == ' ') idx = 36;
+            if (idx >= 0) anchoMsg += anchoProp[idx] + 1;
+        }
+        DIBUJARTEXTOPROP((CONFIG_ANCHO() - anchoMsg) / 2,
+                         logoY + 134, msg, 11);
+
+        gbt_volcar_backbuffer();
+        gbt_esperar(16);
+    }
+}
+
 int main (int argc, char *argv[])
 {
     char nombreVentana [128];
@@ -252,6 +333,10 @@ int main (int argc, char *argv[])
 
     PARSEAR_ARGV(argc, argv, &config_actual);
 
+    // Inicializar cantidad de piezas y ancho del tablero según el modo de juego
+    piezas_en_uso = (config_actual.modo_juego == MODO_DX) ? MAX_PIEZAS : 7;
+    columnasTablero = (config_actual.modo_juego == MODO_DX) ? config_actual.ancho_tablero : 10;
+
     sprintf(nombreVentana, "Tetris %dx%d", CONFIG_ANCHO(), CONFIG_ALTO());
     if (gbt_crear_ventana(nombreVentana, CONFIG_ANCHO(), CONFIG_ALTO(), config_actual.escala) != 0)
     {
@@ -261,7 +346,10 @@ int main (int argc, char *argv[])
 
     CONFIG_APLICAR(&config_actual);
 
+    GENERAR_FUENTE_PROPORCIONAL();
     srand(time(0));
+
+    PANTALLA_PRESENTACION();
 
     while (1)
     {
