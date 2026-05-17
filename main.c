@@ -15,6 +15,7 @@ DATOS DEL GRUPO
 #include "configuracion.h"
 #include "menu.h"
 #include "estadisticas.h"
+#include "archivos.h"
 
 extern char nombreJugador [21];
 extern int animacion_borrado_activa;
@@ -35,97 +36,91 @@ static void PARSEAR_ARGV(int argc, char *argv[], sConfig *c)
             int escala = atoi(argv[i + 1]);
             if (escala >= 1 && escala <= 4)
                 c->escala = escala;
-            i++; // Saltar el siguiente argumento (el valor de escala)
+            i++;
         }
     }
 }
 
-int main (int argc, char *argv[])
+// Ejecuta un loop de partida. Si cargando==1, restaura desde archivo; si no, empieza nueva.
+// Retorna: 0 = volver al menú, 1 = salir del programa
+static int JUGAR(int cargando)
 {
-    char nombreVentana [128];
-
-    // 1. Iniciar GBT
-    if (gbt_iniciar() != 0)
+    if (cargando)
     {
-        fprintf(stderr, "Error al iniciar GBT: %s\n", gbt_obtener_log());
-        return -1;
+        // Cargar partida guardada
+        if (PARTIDA_CARGAR() != 0)
+        {
+            // Si falla la carga, iniciar nueva
+            DIBUJARINICIO(nombreJugador);
+            if (nombreJugador[0] == '\0') return 0; // ESC: volver al menú
+            REINICIARJUEGO();
+        }
     }
-
-    // 2. Cargar configuración (o usar defaults si no existe config.dat)
-    if (CONFIG_CARGAR(&config_actual) != 0)
-        CONFIG_DEFAULTS(&config_actual);
-
-    // 3. Aplicar argumentos de línea de comandos (sobreescriben config)
-    PARSEAR_ARGV(argc, argv, &config_actual);
-
-    // 4. Crear ventana con la resolución y escala de la config
-    sprintf(nombreVentana, "Tetris %dx%d", CONFIG_ANCHO(), CONFIG_ALTO());
-    if (gbt_crear_ventana(nombreVentana, CONFIG_ANCHO(), CONFIG_ALTO(), config_actual.escala) != 0)
+    else
     {
-        fprintf(stderr, "Error al crear ventana: %s\n", gbt_obtener_log());
-        return -1;
-    }
-
-    // 5. Aplicar paleta y velocidad inicial de la config
-    CONFIG_APLICAR(&config_actual);
-
-    srand(time(0));
-
-    // 6. Bucle del menú principal
-    while (1)
-    {
-        eMenuResultado resultado = MENU_PRINCIPAL();
-        if (resultado == MENU_RESULTADO_SALIR)
-            break;
-
-        // -- JUGAR --
-        // Pantalla de ingreso de nombre
+        // Nueva partida
         DIBUJARINICIO(nombreJugador);
-
-        // Reiniciar estado del juego
+        if (nombreJugador[0] == '\0') return 0; // ESC: volver al menú
         REINICIARJUEGO();
-        pieza_fijada_sin_nueva = 0;
-        animacion_estaba_activa = 0;
+    }
 
-        // Aplicar velocidad inicial de la config al juego
-        duracion_caida = velocidades_disponibles[config_actual.velocidad_inicial];
+    pieza_fijada_sin_nueva = 0;
+    animacion_estaba_activa = 0;
 
+    duracion_caida = velocidades_disponibles[config_actual.velocidad_inicial];
+
+    if (!cargando)
         NUEVAPIEZA();
-        double duracion_actual = duracion_caida;
 
-        tGBT_Temporizador *timer_caida = gbt_temporizador_crear(duracion_actual);
-        if (!timer_caida)
+    double duracion_actual = duracion_caida;
+
+    tGBT_Temporizador *timer_caida = gbt_temporizador_crear(duracion_actual);
+    if (!timer_caida) { fprintf(stderr, "Error temporizador\n"); return 1; }
+
+    tGBT_Temporizador *timer_mov = gbt_temporizador_crear(0.1);
+    if (!timer_mov) { fprintf(stderr, "Error temporizador\n"); return 1; }
+
+    tGBT_Temporizador *timer_fijacion = NULL;
+
+    uint8_t corriendo = 1;
+    int salir_juego = 0;
+
+    while (corriendo)
+    {
+        gbt_procesar_entrada();
+
+        if (gbt_tecla_sostenida(GBTK_q))
         {
-            fprintf(stderr, "Error al crear temporizador: %s\n", gbt_obtener_log());
-            return -1;
+            salir_juego = 1;
+            corriendo = 0;
         }
-        tGBT_Temporizador *timer_mov = gbt_temporizador_crear(0.1);
-        if (!timer_mov)
+        else
         {
-            fprintf(stderr, "Error al crear temporizador: %s\n", gbt_obtener_log());
-            return -1;
-        }
-        tGBT_Temporizador *timer_fijacion = NULL;
-
-        uint8_t corriendo = 1;
-        int salir_juego = 0; // 1 = Q presionado, salir del programa completo
-
-        while (corriendo)
-        {
-            gbt_procesar_entrada();
-
-            if (gbt_tecla_sostenida(GBTK_q))
+            if (estado_juego == ESTADO_RUNNING && !animacion_borrado_activa)
             {
-                salir_juego = 1;
-                corriendo = 0; // Salir de la partida
-            }
-            else
-            {
-                if (estado_juego == ESTADO_RUNNING && !animacion_borrado_activa)
+                if (gbt_tecla_presionada(GBTK_p))
                 {
-                    if (gbt_tecla_presionada(GBTK_p))
-                        estado_juego = ESTADO_PAUSED;
+                    // Abrir menú de pausa con opciones
+                    ePausaResultado resultado_pausa = MENU_PAUSA();
 
+                    if (resultado_pausa == PAUSA_RESULTADO_CONTINUAR)
+                    {
+                        estado_juego = ESTADO_RUNNING;
+                    }
+                    else if (resultado_pausa == PAUSA_RESULTADO_GUARDAR_Y_SALIR)
+                    {
+                        PARTIDA_GUARDAR();
+                        corriendo = 0; // Volver al menú
+                    }
+                    else if (resultado_pausa == PAUSA_RESULTADO_SALIR_SIN_GUARDAR)
+                    {
+                        PARTIDA_BORRAR(); // Borrar cualquier guardado previo de esta partida
+                        corriendo = 0; // Volver al menú
+                    }
+                }
+
+                if (estado_juego == ESTADO_RUNNING)
+                {
                     if (gbt_tecla_presionada(GBTK_d))
                         ROTARHORARIO();
                     if (gbt_tecla_presionada(GBTK_a))
@@ -181,71 +176,103 @@ int main (int argc, char *argv[])
                         }
                     }
                 }
-                else if (estado_juego == ESTADO_PAUSED)
-                {
-                    if (gbt_tecla_presionada(GBTK_p))
-                        estado_juego = ESTADO_RUNNING;
-                }
-                else if (estado_juego == ESTADO_GAMEOVER)
-                {
-                    // Guardar estadística al terminar la partida
-                    static int ya_guardo = 0;
-                    if (!ya_guardo)
-                    {
-                        STATS_GUARDAR(nombreJugador, puntaje);
-                        ya_guardo = 1;
-                    }
-
-                    if (gbt_tecla_presionada(GBTK_r))
-                    {
-                        ya_guardo = 0;
-                        REINICIARJUEGO();
-                        duracion_caida = velocidades_disponibles[config_actual.velocidad_inicial];
-                        gbt_temporizador_destruir(timer_caida);
-                        timer_caida = gbt_temporizador_crear(duracion_caida);
-                        duracion_actual = duracion_caida;
-                        pieza_fijada_sin_nueva = 0;
-                        if (timer_fijacion)
-                        {
-                            gbt_temporizador_destruir(timer_fijacion);
-                            timer_fijacion = NULL;
-                        }
-                    }
-                    if (gbt_tecla_presionada(GBTK_ENTER) || gbt_tecla_presionada(GBTK_ESCAPE))
-                    {
-                        ya_guardo = 0;
-                        corriendo = 0; // Volver al menú
-                    }
-                }
-
-                ACTUALIZAR_ANIMACION_BORRADO();
-                if (pieza_fijada_sin_nueva && !animacion_borrado_activa)
-                {
-                    NUEVAPIEZA();
-                    pieza_fijada_sin_nueva = 0;
-                    animacion_estaba_activa = 0;
-                }
-                else
-                {
-                    animacion_estaba_activa = animacion_borrado_activa;
-                }
-
-                DIBUJAR();
-                if (estado_juego == ESTADO_PAUSED)   DIBUJARPAUSA();
-                if (estado_juego == ESTADO_GAMEOVER) DIBUJARGAMEOVER();
-
-                gbt_volcar_backbuffer();
-                gbt_esperar(16);
             }
+            else if (estado_juego == ESTADO_GAMEOVER)
+            {
+                static int ya_guardo = 0;
+                if (!ya_guardo)
+                {
+                    STATS_GUARDAR(nombreJugador, puntaje);
+                    PARTIDA_BORRAR(); // Borrar guardado al terminar partida
+                    ya_guardo = 1;
+                }
+
+                if (gbt_tecla_presionada(GBTK_r))
+                {
+                    ya_guardo = 0;
+                    REINICIARJUEGO();
+                    duracion_caida = velocidades_disponibles[config_actual.velocidad_inicial];
+                    gbt_temporizador_destruir(timer_caida);
+                    timer_caida = gbt_temporizador_crear(duracion_caida);
+                    duracion_actual = duracion_caida;
+                    pieza_fijada_sin_nueva = 0;
+                    if (timer_fijacion)
+                    {
+                        gbt_temporizador_destruir(timer_fijacion);
+                        timer_fijacion = NULL;
+                    }
+                    NUEVAPIEZA();
+                }
+                if (gbt_tecla_presionada(GBTK_ENTER) || gbt_tecla_presionada(GBTK_ESCAPE))
+                {
+                    ya_guardo = 0;
+                    corriendo = 0;
+                }
+            }
+
+            ACTUALIZAR_ANIMACION_BORRADO();
+            if (pieza_fijada_sin_nueva && !animacion_borrado_activa)
+            {
+                NUEVAPIEZA();
+                pieza_fijada_sin_nueva = 0;
+                animacion_estaba_activa = 0;
+            }
+            else
+            {
+                animacion_estaba_activa = animacion_borrado_activa;
+            }
+
+            DIBUJAR();
+            if (estado_juego == ESTADO_GAMEOVER) DIBUJARGAMEOVER();
+
+            gbt_volcar_backbuffer();
+            gbt_esperar(16);
         }
+    }
 
-        // Limpiar temporizadores al salir de la partida
-        gbt_temporizador_destruir(timer_caida);
-        gbt_temporizador_destruir(timer_mov);
-        if (timer_fijacion) gbt_temporizador_destruir(timer_fijacion);
+    gbt_temporizador_destruir(timer_caida);
+    gbt_temporizador_destruir(timer_mov);
+    if (timer_fijacion) gbt_temporizador_destruir(timer_fijacion);
 
-        // Si Q fue presionado durante la partida, salir del programa
-        if (salir_juego) break;
+    return salir_juego;
+}
+
+int main (int argc, char *argv[])
+{
+    char nombreVentana [128];
+
+    if (gbt_iniciar() != 0)
+    {
+        fprintf(stderr, "Error al iniciar GBT: %s\n", gbt_obtener_log());
+        return -1;
+    }
+
+    if (CONFIG_CARGAR(&config_actual) != 0)
+        CONFIG_DEFAULTS(&config_actual);
+
+    PARSEAR_ARGV(argc, argv, &config_actual);
+
+    sprintf(nombreVentana, "Tetris %dx%d", CONFIG_ANCHO(), CONFIG_ALTO());
+    if (gbt_crear_ventana(nombreVentana, CONFIG_ANCHO(), CONFIG_ALTO(), config_actual.escala) != 0)
+    {
+        fprintf(stderr, "Error al crear ventana: %s\n", gbt_obtener_log());
+        return -1;
+    }
+
+    CONFIG_APLICAR(&config_actual);
+
+    srand(time(0));
+
+    while (1)
+    {
+        eMenuResultado resultado = MENU_PRINCIPAL();
+
+        if (resultado == MENU_RESULTADO_SALIR)
+            break;
+
+        int cargando = (resultado == MENU_RESULTADO_CONTINUAR) ? 1 : 0;
+        int salir = JUGAR(cargando);
+        if (salir) break;
     }
 
     gbt_destruir_ventana();
