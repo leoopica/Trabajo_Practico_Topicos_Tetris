@@ -1,8 +1,32 @@
 #include "funcionalidades.h"
+#include <stdlib.h>
 #define duracion_animacion 4
 
-// Definición del tablero
-int tablero [filasTablero][columnasTablero] = {0};
+// Tablero implementado como array de punteros a filas (requisito de promoción)
+// En lugar de int tablero[20][10], usamos int **tablero donde cada fila es un puntero independiente.
+// Esto permite limpiar líneas completas con solo intercambiar punteros (sin copiar memoria).
+int *filas_tablero[filasTablero]; // Array de punteros (uno por fila)
+int celdas_tablero[filasTablero][columnasTablero]; // Memoria real de las celdas
+int **tablero = NULL; // Puntero al array de punteros (para acceso como tablero[f][c])
+
+// Inicializa el tablero dinámico: apunta cada fila al bloque de celdas correspondiente
+static void INIT_TABLERO(void)
+{
+    for (int f = 0; f < filasTablero; f++)
+    {
+        filas_tablero[f] = celdas_tablero[f];
+        for (int c = 0; c < columnasTablero; c++)
+            celdas_tablero[f][c] = 0;
+    }
+    tablero = filas_tablero;
+}
+
+// Inicialización automática al arrancar (tablero apuntado correctamente desde el inicio)
+static int tablero_inicializado = 0;
+static void ASEGURAR_TABLERO(void)
+{
+    if (!tablero_inicializado) { INIT_TABLERO(); tablero_inicializado = 1; }
+}
 
 //Definición del estado inicial del juego
 int puntaje = 0;
@@ -64,11 +88,8 @@ void INICIALIZARPIEZA (sPieza *p, int tipo)
 void REINICIARJUEGO ()
 {
     int f, c;
-    for (f = 0; f < filasTablero; f++) {
-        for (c = 0; c < columnasTablero; c++) {
-            tablero[f][c] = 0;
-        }
-    }
+    INIT_TABLERO(); // Reinicializar punteros y limpiar tablero
+    tablero_inicializado = 1;
     puntaje = 0;
     nivel = 1;
     lineas_totales = 0;
@@ -395,39 +416,48 @@ void ACTUALIZAR_ANIMACION_BORRADO() // NUEVA
 
 void COLAPSAR_FILAS ()
 {
-    int nuevaFila = filasTablero - 1;
+    // Implementación con intercambio de punteros (requisito de promoción):
+    // En lugar de copiar la memoria de cada celda, reordenamos los punteros de fila.
+    // Las filas completas (borradas) se vaciaron durante la animación (celdas en 0).
+    // Las movemos al tope del tablero reordenando el array de punteros filas_tablero[].
+
+    // Construir el nuevo orden: primero las filas NO borradas (de abajo a arriba),
+    // luego las filas borradas (ya vacías) arriba.
+    int *nuevo_orden[filasTablero];
+    int destino = filasTablero - 1; // Colocamos filas válidas desde abajo
 
     for (int fila = filasTablero - 1; fila >= 0; fila--)
     {
         int es_borrada = 0;
-
         for (int i = 0; i < cant_filas_borrar; i++)
-        {
-            if (filas_a_borrar[i] == fila)
-                es_borrada = 1;
-        }
+            if (filas_a_borrar[i] == fila) { es_borrada = 1; break; }
 
         if (!es_borrada)
+            nuevo_orden[destino--] = filas_tablero[fila];
+    }
+
+    // Las filas borradas (ya vacías) van al tope
+    for (int fila = filasTablero - 1; fila >= 0; fila--)
+    {
+        int es_borrada = 0;
+        for (int i = 0; i < cant_filas_borrar; i++)
+            if (filas_a_borrar[i] == fila) { es_borrada = 1; break; }
+
+        if (es_borrada)
         {
-            if (nuevaFila != fila)
-            {
-                for (int c = 0; c < columnasTablero; c++)
-                {
-                    tablero[nuevaFila][c] = tablero[fila][c];
-                }
-            }
-            nuevaFila--;
+            // Vaciar la fila por si acaso
+            for (int c = 0; c < columnasTablero; c++)
+                filas_tablero[fila][c] = 0;
+            nuevo_orden[destino--] = filas_tablero[fila];
         }
     }
 
-    while (nuevaFila >= 0)
-    {
-        for (int c = 0; c < columnasTablero; c++)
-        {
-            tablero[nuevaFila][c] = 0;
-        }
-        nuevaFila--;
-    }
+    // Aplicar el nuevo orden: solo intercambiamos punteros, sin copiar celdas
+    for (int f = 0; f < filasTablero; f++)
+        filas_tablero[f] = nuevo_orden[f];
+
+    // Actualizar el puntero tablero (apunta siempre a filas_tablero)
+    tablero = filas_tablero;
 
     cant_filas_borrar = 0;
 }

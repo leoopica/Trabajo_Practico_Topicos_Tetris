@@ -32,24 +32,25 @@ tGBT_ColorRGB paletas[CANT_PALETAS][16] =
         {0xFF, 0xFF, 0xFF}, // 15: Blanco (transparente)
     },
 
-    // PALETA 1: Game Boy
+    // PALETA 1: Game Boy (colores originales DMG)
+    // Los 4 tonos originales son: #0F380F, #306230, #8BAC0F, #9BBC0F
     {
-        {0x0F, 0x38, 0x0F}, // 0:  Verde muy oscuro
-        {0x0F, 0x38, 0x0F}, // 1:  Verde muy oscuro
-        {0x30, 0x62, 0x30}, // 2:  Verde oscuro
-        {0x8B, 0xAC, 0x0F}, // 3:  Verde medio
-        {0x30, 0x62, 0x30}, // 4:  Verde oscuro
-        {0x8B, 0xAC, 0x0F}, // 5:  Verde medio
-        {0x9B, 0xBC, 0x0F}, // 6:  Verde claro
-        {0x9B, 0xBC, 0x0F}, // 7:  Verde claro
-        {0x30, 0x62, 0x30}, // 8:  Verde oscuro
-        {0x30, 0x62, 0x30}, // 9:  Verde oscuro
-        {0x8B, 0xAC, 0x0F}, // 10: Verde medio
-        {0x9B, 0xBC, 0x0F}, // 11: Verde claro
-        {0x8B, 0xAC, 0x0F}, // 12: Verde medio
-        {0x9B, 0xBC, 0x0F}, // 13: Verde claro
-        {0x30, 0x62, 0x30}, // 14: Verde oscuro
-        {0x9B, 0xBC, 0x0F}, // 15: Verde claro
+        {0x0F, 0x38, 0x0F}, // 0:  Negro GB (fondo vacío / transparente)
+        {0x09, 0x21, 0x09}, // 1:  Verde oscuro GB (fondo de pantalla)
+        {0x30, 0x62, 0x30}, // 2:  Verde oscuro GB (pieza L — sombra)
+        {0x8B, 0xAC, 0x0F}, // 3:  Verde medio GB  (pieza O)
+        {0x30, 0x62, 0x30}, // 4:  Verde oscuro GB (pieza S — sombra)
+        {0x8B, 0xAC, 0x0F}, // 5:  Verde medio GB  (pieza T)
+        {0x9B, 0xBC, 0x0F}, // 6:  Verde claro GB  (pieza L — base)
+        {0x9B, 0xBC, 0x0F}, // 7:  Verde claro GB  (marco brillo / texto)
+        {0x30, 0x62, 0x30}, // 8:  Negro GB        (marco sombra / grilla)
+        {0x9B, 0xBC, 0x0F}, // 9:  Verde claro GB  (pieza J — igual que L)
+        {0x8B, 0xAC, 0x0F}, // 10: Verde medio GB  (pieza S — base)
+        {0x9B, 0xBC, 0x0F}, // 11: Verde claro GB  (pieza I — base)
+        {0x8B, 0xAC, 0x0F}, // 12: Verde medio GB  (pieza Z — base)
+        {0x9B, 0xBC, 0x0F}, // 13: Verde claro GB  (pieza T — brillo)
+        {0x30, 0x62, 0x30}, // 14: Verde oscuro GB (pieza O — sombra)
+        {0x9B, 0xBC, 0x0F}, // 15: Verde claro GB  (transparente GBT)
     },
 
     // PALETA 2: Atari
@@ -147,6 +148,11 @@ void CONFIG_APLICAR (const sConfig *c)
     gbt_aplicar_paleta ((tGBT_ColorRGB*)paletas [c->paleta], 16, GBT_FORMATO_888);
 }
 
+int CONFIG_TAM_MINO ()
+{
+    // CGA: 8px por mino, VGA: 16px por mino (doble escala)
+    return (config_actual.resolucion == RESOLUCION_VGA) ? 16 : 8;
+}
 int CONFIG_ANCHO ()
 {
     int ancho;

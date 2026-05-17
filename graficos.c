@@ -150,10 +150,10 @@ void DIBUJARMARCOGENERICO (int x0, int y0, int ancho, int alto, int colorFondo)
             {
                 color = 7;                       // Gris claro
             }
-
-            if (y >= y0 + alto - 2 || x >= x0 + ancho - 2) // Borde inferior o derecho -> sombra
+            
+             else if (y >= y0 + alto - 2 || x >= x0 + ancho - 2) // Borde inferior o derecho
             {
-                color = 8;                       // Gris oscuro
+                color = 7;                       // Gris oscuro
             }
 
             gbt_dibujar_pixel(x, y, color);
@@ -407,7 +407,12 @@ void DIBUJARINICIO(char *nombre) // PONER COMENTARIOS
 
         if (tecla != GBTK_DESCONOCIDA)
         {
-            if (tecla == GBTK_ENTER)
+            if (tecla == GBTK_ESCAPE)
+            {
+                nombre[0] = '\0'; // Señal de cancelación: nombre vacío
+                return;           // Vuelve al menú principal
+            }
+            else if (tecla == GBTK_ENTER)
             {
                 if (i > 0)
                 {
@@ -451,31 +456,41 @@ void DIBUJARINICIO(char *nombre) // PONER COMENTARIOS
             }
         }
 
-        // --- DIBUJADO ---
+                // --- DIBUJADO ---
         gbt_borrar_backbuffer(0);
         DIBUJARFONDO();
 
-        // Logo TETRIS centrado horizontalmente
-        // El logo mide 167px de ancho
-        DIBUJAR_LOGO_COMPLETO((anchoVentana - 167) / 2, 15);
+        // Logo TETRIS centrado horizontalmente (misma posici�n que en el men� principal)
+        int logoY = (altoVentana / 2 - 110) / 2;
+        if (logoY < 3) logoY = 3;
+        DIBUJAR_LOGO_COMPLETO((anchoVentana - 167) / 2, logoY);
 
-        // Texto centrado
-        DIBUJARTEXTO((anchoVentana - 18 * anchoCaracter8) / 2, 140, "INGRESE SU NOMBRE:", anchoCaracter8);
+        // Grupo de texto centrado debajo del logo
+        int grupoAlto = 8 + 10 + 8 + 10 + 8;
+        int grupoY = logoY + 110 + (altoVentana - (logoY + 110) - grupoAlto) / 2;
+        int textY = grupoY;
+        int nameY = textY + 18;
+        int escY = nameY + 18;
+        DIBUJARTEXTO((anchoVentana - 18 * anchoCaracter8) / 2, textY, "INGRESE SU NOMBRE:", anchoCaracter8);
 
         // Nombre centrado
-        DIBUJARTEXTO((anchoVentana - 13 * anchoCaracter8) / 2, 160, nombre, anchoCaracter8);
+        DIBUJARTEXTO((anchoVentana - 13 * anchoCaracter8) / 2, nameY, nombre, anchoCaracter8);
 
         // Cursor
         if (i < 13)
         {
             DIBUJARCARACTER(
                 (anchoVentana - 13 * anchoCaracter8) / 2 + i * anchoCaracter8,
-                160,
-                37, // índice del carácter "_"
+                nameY,
+                37,
                 anchoCaracter8,
                 7
             );
         }
+
+        // Instruccion ESC
+        DIBUJARTEXTO((anchoVentana - 19 * anchoCaracter8) / 2, escY, "ESC VOLVER AL MENU", anchoCaracter8);
+
         gbt_volcar_backbuffer();
         gbt_esperar(16);
     }

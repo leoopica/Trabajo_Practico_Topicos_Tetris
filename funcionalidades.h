@@ -25,7 +25,11 @@ typedef enum {
 } eEstadoJuego;
 
 // Variables globales - extern permite que se compartan las variables globales entre archivos
-extern int tablero [filasTablero][columnasTablero]; // Define el tablero
+// tablero se implementa como array de punteros a filas (requisito de promoción):
+// filas_tablero[f] es un puntero a la f-ésima fila; tablero[f][c] accede a la celda normal.
+extern int *filas_tablero[filasTablero]; // Array de punteros (uno por fila)
+extern int celdas_tablero[filasTablero][columnasTablero]; // Memoria real
+extern int **tablero; // Puntero al array de punteros (acceso como tablero[f][c])
 extern sPieza actual;
 extern sPieza proxima;
 extern int puntaje;

@@ -1,6 +1,7 @@
 #include "menu.h"
 #include "estadisticas.h"
 #include "inicio.h"
+#include "archivos.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -34,10 +35,10 @@ static void DIBUJAR_OPCION(int posY, const char *texto, int seleccionada)
 
     if (seleccionada)
     {
-        // Fondo resaltado
-        DIBUJAR_RECTANGULO(posX - 4, posY - 1, largo * anchoCaracter8 + 8, altoCaracter + 2, COLOR_AZUL);
-        // Flechas indicadoras
-        DIBUJARCARACTER(posX - 12, posY, 17, anchoCaracter8, COLOR_AMARILLO); // '>'  (R en la fuente, se puede ajustar)
+        // Fondo resaltado: color 0 (negro en todas las paletas) para que contraste siempre
+        DIBUJAR_RECTANGULO(posX - 4, posY - 1, largo * anchoCaracter8 + 8, altoCaracter + 2, COLOR_NEGRO);
+        // Flecha indicadora: color 7 (gris claro/verde claro) para que sea visible en todas las paletas
+        DIBUJARCARACTER(posX - 12, posY, 17, anchoCaracter8, COLOR_GRIS_CLARO); // '>'  (R en la fuente)
         DIBUJARTEXTO(posX, posY, (char*)texto, anchoCaracter8);
     }
     else
@@ -72,69 +73,99 @@ static void DIBUJAR_CABECERA(void)
 
 eMenuResultado MENU_PRINCIPAL(void)
 {
-    // Opciones del menú principal
-    const char *opciones[] = {"JUGAR", "ESTADISTICAS", "INSTRUCCIONES", "OPCIONES", "SALIR"};
-    const int CANT_OPCIONES = 5;
-    int seleccion = 0;
-
     g_salir_juego = 0; // Resetear flag al entrar al menú principal
+
     while (1)
     {
-        // Recalcular layout cada frame para adaptarse al cambio de resolución
-        int alto = CONFIG_ALTO();
-        // Las opciones arrancan justo debajo del logo (que termina ~alto/2)
-        // primerItemY = justo después del logo, centrado en la mitad inferior
-        int logoAlto  = 110; // altura aprox del logo completo
-        int logoY     = (alto / 2 - logoAlto) / 2;
-        if (logoY < 3) logoY = 3;
-        int logoBottom = logoY + logoAlto;
-        int areaDisponible = alto - logoBottom;
-        int totalOpciones  = CANT_OPCIONES * 14; // estimado height opciones
-        int primerItemY = logoBottom + (areaDisponible - totalOpciones) / 2;
-        if (primerItemY < logoBottom + 4) primerItemY = logoBottom + 4;
-        int separacion  = 14 + (alto - 200) / 20; // Separación mayor en VGA
+        // Detectar si hay partida guardada (puede cambiar entre frames si se borró)
+        int hay_guardado = PARTIDA_EXISTE();
 
-        gbt_procesar_entrada();
+        // Construir lista de opciones dinámica
+        const char *opciones[6];
+        eMenuResultado resultados[6];
+        int CANT_OPCIONES = 0;
 
-        // Navegación
-        if (gbt_tecla_presionada(GBTK_ARRIBA))
+        opciones[CANT_OPCIONES]   = "JUGAR";
+        resultados[CANT_OPCIONES] = MENU_RESULTADO_JUGAR;
+        CANT_OPCIONES++;
+
+        if (hay_guardado)
         {
-            seleccion = (seleccion - 1 + CANT_OPCIONES) % CANT_OPCIONES;
-        }
-        if (gbt_tecla_presionada(GBTK_ABAJO))
-        {
-            seleccion = (seleccion + 1) % CANT_OPCIONES;
-        }
-        if (gbt_tecla_presionada(GBTK_ENTER))
-        {
-            if (seleccion == 0) return MENU_RESULTADO_JUGAR;
-            if (seleccion == 1) { MENU_ESTADISTICAS();  if (g_salir_juego) return MENU_RESULTADO_SALIR; }
-            if (seleccion == 2) { MENU_INSTRUCCIONES(); if (g_salir_juego) return MENU_RESULTADO_SALIR; }
-            if (seleccion == 3) { MENU_OPCIONES();      if (g_salir_juego) return MENU_RESULTADO_SALIR; }
-            if (seleccion == 4) return MENU_RESULTADO_SALIR;
-        }
-        // Q sale del juego en cualquier parte; ESC en menú principal selecciona SALIR
-        if (gbt_tecla_sostenida(GBTK_q))
-        {
-            return MENU_RESULTADO_SALIR;
-        }
-        if (gbt_tecla_presionada(GBTK_ESCAPE))
-        {
-            seleccion = 4; // Mover selección a SALIR (feedback visual)
+            opciones[CANT_OPCIONES]   = "CONTINUAR";
+            resultados[CANT_OPCIONES] = MENU_RESULTADO_CONTINUAR;
+            CANT_OPCIONES++;
         }
 
-        // Dibujado
-        gbt_borrar_backbuffer(COLOR_NEGRO);
-        DIBUJARFONDO();
-        DIBUJAR_CABECERA();
+        opciones[CANT_OPCIONES]   = "ESTADISTICAS";
+        resultados[CANT_OPCIONES] = (eMenuResultado)-1; // submenú
+        CANT_OPCIONES++;
 
-        for (int i = 0; i < CANT_OPCIONES; i++)
+        opciones[CANT_OPCIONES]   = "INSTRUCCIONES";
+        resultados[CANT_OPCIONES] = (eMenuResultado)-2;
+        CANT_OPCIONES++;
+
+        opciones[CANT_OPCIONES]   = "OPCIONES";
+        resultados[CANT_OPCIONES] = (eMenuResultado)-3;
+        CANT_OPCIONES++;
+
+        opciones[CANT_OPCIONES]   = "SALIR";
+        resultados[CANT_OPCIONES] = MENU_RESULTADO_SALIR;
+        CANT_OPCIONES++;
+
+        int seleccion = 0;
+
+        // Loop de este frame (re-entra si cambia hay_guardado)
+        int rehacerMenu = 0;
+        while (!rehacerMenu)
         {
-            DIBUJAR_OPCION(primerItemY + i * separacion, opciones[i], i == seleccion);
-        }
+            // Recalcular layout
+            int alto = CONFIG_ALTO();
+            int logoAlto  = 110;
+            int logoY     = (alto / 2 - logoAlto) / 2;
+            if (logoY < 3) logoY = 3;
+            int logoBottom = logoY + logoAlto;
+            int areaDisponible = alto - logoBottom;
+            int totalOpciones  = CANT_OPCIONES * 14;
+            int primerItemY = logoBottom + (areaDisponible - totalOpciones) / 2;
+            if (primerItemY < logoBottom + 4) primerItemY = logoBottom + 4;
+            int separacion  = 14 + (alto - 200) / 20;
 
-        gbt_volcar_backbuffer();
-        gbt_esperar(16);
+            gbt_procesar_entrada();
+
+            if (gbt_tecla_presionada(GBTK_ARRIBA))
+                seleccion = (seleccion - 1 + CANT_OPCIONES) % CANT_OPCIONES;
+            if (gbt_tecla_presionada(GBTK_ABAJO))
+                seleccion = (seleccion + 1) % CANT_OPCIONES;
+
+            if (gbt_tecla_presionada(GBTK_ENTER))
+            {
+                eMenuResultado r = resultados[seleccion];
+                if (r == MENU_RESULTADO_JUGAR || r == MENU_RESULTADO_CONTINUAR)
+                    return r;
+                if (r == MENU_RESULTADO_SALIR)
+                    return r;
+                // Submenús
+                if (r == (eMenuResultado)-1) { MENU_ESTADISTICAS();  if (g_salir_juego) return MENU_RESULTADO_SALIR; rehacerMenu = 1; }
+                if (r == (eMenuResultado)-2) { MENU_INSTRUCCIONES(); if (g_salir_juego) return MENU_RESULTADO_SALIR; rehacerMenu = 1; }
+                if (r == (eMenuResultado)-3) { MENU_OPCIONES();      if (g_salir_juego) return MENU_RESULTADO_SALIR; rehacerMenu = 1; }
+            }
+
+            if (gbt_tecla_sostenida(GBTK_q))
+                return MENU_RESULTADO_SALIR;
+            if (gbt_tecla_presionada(GBTK_ESCAPE))
+                seleccion = CANT_OPCIONES - 1; // Mover a SALIR
+
+            // Dibujado
+            gbt_borrar_backbuffer(COLOR_NEGRO);
+            DIBUJARFONDO();
+            DIBUJAR_CABECERA();
+
+            for (int i = 0; i < CANT_OPCIONES; i++)
+                DIBUJAR_OPCION(primerItemY + i * separacion, opciones[i], i == seleccion);
+
+            gbt_volcar_backbuffer();
+            gbt_esperar(16);
+        }
     }
 }
 
@@ -261,7 +292,6 @@ void MENU_OPCIONES(void)
 
 void MENU_ESTADISTICAS(void)
 {
-    // Cargar estadísticas
     tEstadistica stats[5];
     int cant = STATS_CARGAR(stats, 5);
 
@@ -285,30 +315,40 @@ void MENU_ESTADISTICAS(void)
         gbt_borrar_backbuffer(COLOR_NEGRO);
         DIBUJARFONDO();
 
+        // Calcular ancho total de la tabla
+        int anchoNombre = 13 * anchoCaracter8;
+        int anchoPuntaje = 7 * anchoCaracter8;
+        int gapColumnas = 20;
+        int anchoTabla = anchoNombre + gapColumnas + anchoPuntaje;
+        int colNombre = (ancho - anchoTabla) / 2;
+        int colPuntaje = colNombre + anchoNombre + gapColumnas;
+
+        // Altura total del contenido: titulo + gap + headers + linea + gap + (max 5 filas) + gap + instruccion
+        int altoContenido = 8 + 10 + 8 + 8 + 6 + (cant > 0 ? cant * 14 : 8 + 20) + 10 + 8;
+        int grupoY = (alto - altoContenido) / 2;
+        if (grupoY < 10) grupoY = 10;
+        int filaY = grupoY;
+
         // Título
         int tituloX = (ancho - (int)strlen("ESTADISTICAS") * anchoCaracter8) / 2;
-        DIBUJARTEXTO(tituloX, 20, "ESTADISTICAS", anchoCaracter8);
+        DIBUJARTEXTO(tituloX, filaY, "ESTADISTICAS", anchoCaracter8);
+        filaY += 18;
 
         // Encabezados
-        // Columnas: NOMBRE a la izquierda, PUNTAJE separado por espacio fijo
-        // Nombre ocupa hasta 13 chars * 8px = 104px; dejamos 20px de separación
-        int colNombre  = ancho / 2 - 70;
-        int colPuntaje = colNombre + 13 * anchoCaracter8 + 20; // siempre 124px después del inicio del nombre
-        int filaY = 50;
-
-        DIBUJARTEXTO(colNombre,  filaY, "NOMBRE", anchoCaracter8);
+        DIBUJARTEXTO(colNombre, filaY, "NOMBRE", anchoCaracter8);
         DIBUJARTEXTO(colPuntaje, filaY, "PUNTAJE", anchoCaracter8);
         filaY += 14;
 
         // Línea separadora
-        for (int x = colNombre - 4; x < colPuntaje + 7 * anchoCaracter8 + 4; x++)
+        for (int x = colNombre - 4; x < colPuntaje + anchoPuntaje + 4; x++)
             gbt_dibujar_pixel(x, filaY, COLOR_GRIS_CLARO);
         filaY += 6;
 
+        // Datos
         if (cant == 0)
         {
             int sinDatosX = (ancho - (int)strlen("SIN PARTIDAS REGISTRADAS") * anchoCaracter8) / 2;
-            DIBUJARTEXTO(sinDatosX, filaY + 20, "SIN PARTIDAS REGISTRADAS", anchoCaracter8);
+            DIBUJARTEXTO(sinDatosX, filaY + 10, "SIN PARTIDAS REGISTRADAS", anchoCaracter8);
         }
         else
         {
@@ -317,13 +357,13 @@ void MENU_ESTADISTICAS(void)
                 char puntajeStr[12];
                 sprintf(puntajeStr, "%d", stats[i].puntaje);
 
-                DIBUJARTEXTO(colNombre,  filaY, stats[i].nombre,  anchoCaracter8);
+                DIBUJARTEXTO(colNombre, filaY, stats[i].nombre, anchoCaracter8);
                 DIBUJARTEXTO(colPuntaje, filaY, puntajeStr, anchoCaracter8);
                 filaY += 14;
             }
         }
 
-        // Instrucción
+        // Instrucción al fondo
         int instrX = (ancho - (int)strlen("ENTER O ESC PARA VOLVER") * anchoCaracter8) / 2;
         DIBUJARTEXTO(instrX, alto - 20, "ENTER O ESC PARA VOLVER", anchoCaracter8);
 
@@ -400,6 +440,70 @@ void MENU_INSTRUCCIONES(void)
         // Leyenda fija en el fondo
         int instrX = (ancho - (int)strlen("ENTER O ESC PARA VOLVER") * anchoCaracter8) / 2;
         DIBUJARTEXTO(instrX, alto - 20, "ENTER O ESC PARA VOLVER", anchoCaracter8);
+
+        gbt_volcar_backbuffer();
+        gbt_esperar(16);
+    }
+}
+// -------------------------------------------------------
+// MENU PAUSA (con navegación por flechas y Enter)
+// -------------------------------------------------------
+
+ePausaResultado MENU_PAUSA(void)
+{
+    const char *opciones[] = {
+        "CONTINUAR",
+        "GUARDAR Y SALIR AL MENU",
+        "SALIR AL MENU SIN GUARDAR"
+    };
+    const int CANT_OPCIONES = 3;
+    int seleccion = 0;
+
+    while (1)
+    {
+        int ancho = CONFIG_ANCHO();
+        int alto  = CONFIG_ALTO();
+        int centroX = ancho / 2;
+        int centroY = alto  / 2;
+
+        // Caja: ancho suficiente para la opción más larga
+        int anchoCaja = (int)strlen("SALIR AL MENU SIN GUARDAR") * anchoCaracter8 + 72;
+        int altoCaja  = 16 + CANT_OPCIONES * 16 + 8;
+        int x0 = centroX - anchoCaja / 2;
+        int y0 = centroY - altoCaja  / 2;
+
+        gbt_procesar_entrada();
+
+        if (gbt_tecla_presionada(GBTK_ARRIBA))
+            seleccion = (seleccion - 1 + CANT_OPCIONES) % CANT_OPCIONES;
+        if (gbt_tecla_presionada(GBTK_ABAJO))
+            seleccion = (seleccion + 1) % CANT_OPCIONES;
+
+        if (gbt_tecla_presionada(GBTK_ENTER) || gbt_tecla_presionada(GBTK_p))
+        {
+            if (seleccion == 0) return PAUSA_RESULTADO_CONTINUAR;
+            if (seleccion == 1) return PAUSA_RESULTADO_GUARDAR_Y_SALIR;
+            if (seleccion == 2) return PAUSA_RESULTADO_SALIR_SIN_GUARDAR;
+        }
+
+        // P también continúa (tecla de pausa original)
+        if (gbt_tecla_presionada(GBTK_ESCAPE))
+            return PAUSA_RESULTADO_CONTINUAR;
+
+        // Dibujar el juego de fondo + el panel de pausa encima
+        DIBUJAR();
+        DIBUJARMARCOGENERICO(x0, y0, anchoCaja, altoCaja, 0);
+
+        // Título
+        char *titulo = "PAUSA";
+        DIBUJARTEXTO(centroX - ((int)strlen(titulo) * anchoCaracter8) / 2, y0 + 4, titulo, anchoCaracter8);
+
+        // Opciones
+        for (int i = 0; i < CANT_OPCIONES; i++)
+        {
+            int opY = y0 + 16 + i * 16;
+            DIBUJAR_OPCION(opY, opciones[i], i == seleccion);
+        }
 
         gbt_volcar_backbuffer();
         gbt_esperar(16);

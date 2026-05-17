@@ -5,7 +5,8 @@
 #include "gbt.h"
 
 #define cantPiezas 7 // Define la cantidad de piezas
-#define tamMino 8 // Define tamaño de cada mino en pixeles
+// tamMino ahora es dinámico: 8px en CGA, 16px en VGA
+// Se accede via la función TAM_MINO() definida en configuracion.h
 #define cantCaracteres 38 // 26 letras, 10 números, 1 vacío, 1 guion bajo
 #define altoCaracter 8
 #define anchoCaracter8 8

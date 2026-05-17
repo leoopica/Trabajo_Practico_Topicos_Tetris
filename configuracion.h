@@ -46,5 +46,9 @@ int  CONFIG_CARGAR (sConfig *c); // Carga desde config.dat
 void CONFIG_APLICAR (const sConfig *c); // Aplica la configuración al juego
 int CONFIG_ANCHO (); // Retorna ancho según la resolución activa
 int CONFIG_ALTO (); // Retorna alto según la resolución activa
+int CONFIG_TAM_MINO (); // Retorna el tamaño del mino según la resolución activa
+
+// tamMino como macro dinámica
+#define tamMino (CONFIG_TAM_MINO())
 
 #endif // CONFIGURACION_H_INCLUDED
