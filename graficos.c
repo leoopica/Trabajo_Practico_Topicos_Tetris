@@ -5,7 +5,7 @@
 #include <string.h>
 #include "funcionalidades.h"
 
-// Paleta de colores
+// Paleta de colores CGA (16 colores)
 tGBT_ColorRGB paletaCGA [cantColores] =
 {
     {0x00, 0x00, 0x00}, // 0:   Negro
@@ -26,84 +26,84 @@ tGBT_ColorRGB paletaCGA [cantColores] =
     {0xFF, 0xFF, 0xFF}  // 15:  Usado como transparente por GBT
 };
 
-int colorBrillo [cantColores] = {0,9,10,11,12,13,15,15,7,15,15,15,15,15,15,15}; // Paleta de colores para la parte de brillo
-int colorSombra [cantColores] = {0,1,2,3,4,5,4,8,0,1,2,3,4,5,6,7}; // Paleta de colores para la parte de sombra
+// Para cada color base, el índice de color a usar en la zona de brillo (esquina sup-izq)
+int colorBrillo [cantColores] = {0,9,10,11,12,13,15,15,7,15,15,15,15,15,15,15};
+// Para cada color base, el índice de color a usar en la zona de sombra (esquina inf-der)
+int colorSombra [cantColores] = {0,1,2,3,4,5,4,8,0,1,2,3,4,5,6,7};
+
 extern int pieza_fijada_sin_nueva;
 
+// Dibuja el tablero completo, la pieza actual, el fondo, marco, grilla, puntajes, próxima pieza, cheat y nombre del jugador
 void DIBUJAR ()
 {
-    int fTablero, cTablero, fPieza, cPieza; // filasTablero y columnasTablero de tablero y de matriz de pieza
-    int posXPantalla, posYPantalla; // Posición horizontal y vertical
-    int pixelXBloque, pixelYBloque; // Pixel horizontal y vertical de la pieza
-    int ocupado = 0, colorBase, colorFinal; // Ubicación ocupada, color original del bloque, color que va a dibujarse en el pixel
+    int fTablero, cTablero, fPieza, cPieza;
+    int posXPantalla, posYPantalla;
+    int pixelXBloque, pixelYBloque;
+    int ocupado = 0, colorBase, colorFinal;
 
-    gbt_borrar_backbuffer (0); // Limpia pantalla (negro)
+    gbt_borrar_backbuffer (0); // Limpia toda la pantalla con color 0 (negro)
 
+    // Capas de dibujo en orden
     DIBUJARFONDO ();
     DIBUJARMARCO ();
     DIBUJARGRILLA ();
     DIBUJARPUNTAJE ();
     DIBUJARPROXIMA ();
     DIBUJARCHEAT ();
-    DIBUJARTEXTO(offsetHorizontal + columnasTablero * tamMino + tamMino, offsetVertical + filasTablero * tamMino - 20 - 10, "PLAYER ", anchoCaracter8); // MODIFICAR PARA QUE SEA MÁS SIMPLE?
-    DIBUJARTEXTO(offsetHorizontal + columnasTablero * tamMino + tamMino, offsetVertical + filasTablero * tamMino - 20, nombreJugador, anchoCaracter8); // MODIFICAR PARA QUE SEA MÁS SIMPLE?
+    DIBUJARTEXTO(offsetHorizontal + columnasTablero * tamMino + tamMino, offsetVertical + filasTablero * tamMino - 20 - 10, "PLAYER ", anchoCaracter8);
+    DIBUJARTEXTO(offsetHorizontal + columnasTablero * tamMino + tamMino, offsetVertical + filasTablero * tamMino - 20, nombreJugador, anchoCaracter8);
 
-    for (fTablero = 0; fTablero < filasTablero; fTablero ++) // Recorre filasTablero del tablero
+    // Recorre SOLO las filas VISIBLES (salta FILAS_INVISIBLES filas arriba)
+    for (fTablero = FILAS_INVISIBLES; fTablero < FILAS_TOTALES; fTablero ++)
     {
-        for (cTablero = 0; cTablero < columnasTablero; cTablero ++) // Recorre columnasTablero del tablero
+        for (cTablero = 0; cTablero < columnasTablero; cTablero ++)
         {
-            ocupado = tablero [fTablero][cTablero]; // Verifica si ya hay un mino en esa posición
-            
+            ocupado = tablero [fTablero][cTablero];
+
+            // Sobre-escribe con la pieza actual si está en esta celda
             if (!pieza_fijada_sin_nueva)
             {
-                for (fPieza = 0; fPieza < 4; fPieza ++) // Recorre filasTablero de matriz de la pieza
+                for (fPieza = 0; fPieza < 4; fPieza ++)
                 {
-                    for (cPieza = 0; cPieza < 4; cPieza ++) // Recorre columnasTablero de matriz de la pieza
+                    for (cPieza = 0; cPieza < 4; cPieza ++)
                     {
-                        if (actual.forma [fPieza][cPieza] == 1) // Verifica si la matriz de la pieza tiene un mino en esa posición
+                        if (actual.forma [fPieza][cPieza] == 1)
                         {
                             int colPiezaMundo = actual.columna + cPieza;
-                            // Tablero circular en modo DX: wrappear coordenada horizontal
                             if (config_actual.modo_juego == MODO_DX)
                             {
                                 if (colPiezaMundo < 0) colPiezaMundo += columnasTablero;
                                 if (colPiezaMundo >= columnasTablero) colPiezaMundo -= columnasTablero;
                             }
-                            if (actual.fila + fPieza == fTablero && colPiezaMundo == cTablero) // Verifica si el mino en cuestión está en cierta posición del tablero
-                            {
-                                ocupado = actual.color; // Indica que está ocupado por la pieza
-                            }
+                            if (actual.fila + fPieza == fTablero && colPiezaMundo == cTablero)
+                                ocupado = actual.color;
                         }
                     }
                 }
             }
 
-            if (ocupado != 0) // Si está ocupado, lo dibuja
+            // Dibuja el bloque si la celda está ocupada
+            if (ocupado != 0)
             {
-                colorBase = ocupado; // Guarda el color base de la pieza a dibujar
-                // Dibujar bloque
-                posXPantalla = offsetHorizontal + cTablero * tamMino -1; // Convierte coordenadas horizontales del tablero en coordenadas en pantalla
-                posYPantalla = offsetVertical + fTablero * tamMino -1; // Convierte coordenadas verticales del tablero en coordenadas en pantalla
+                colorBase = ocupado;
+                posXPantalla = offsetHorizontal + cTablero * tamMino - 1;
+                // Desplaza la Y para ignorar las filas invisibles (fTablero parte de FILAS_INVISIBLES)
+                posYPantalla = offsetVertical + (fTablero - FILAS_INVISIBLES) * tamMino - 1;
 
-                for (pixelYBloque = 0; pixelYBloque <= tamMino; pixelYBloque ++) // Recorre filasTablero de píxeles dentro del bloque
+                // Dibuja cada píxel del bloque (tamMino+1 × tamMino+1) con efecto 3D
+                for (pixelYBloque = 0; pixelYBloque <= tamMino; pixelYBloque ++)
                 {
-                    for (pixelXBloque = 0; pixelXBloque <= tamMino; pixelXBloque ++) // Recorre columnasTablero de píxeles dentro del bloque
+                    for (pixelXBloque = 0; pixelXBloque <= tamMino; pixelXBloque ++)
                     {
-                        colorFinal = colorBase; // Pone el pixel en el color de la base
-                        
-                        if (pixelYBloque <= 1 || pixelXBloque <= 1) // Verifica la posición del pixel para ver si está en la esquina superior izquierda
-                        {
-                            colorFinal = colorBrillo [colorBase]; // Pone brillo en la esquina superior izquierda (borde de 2 píxeles)
-                        }
-                        else 
-                        {
-                            if (pixelYBloque >= tamMino - 2 || pixelXBloque >= tamMino - 2) // Verifica la posición del pixel para ver si está en la esquina inferior derecha
-                            {
-                                colorFinal = colorSombra [colorBase]; // Pone sombra en esquina inferior derecha (borde de 2 píxeles)
-                            }
-                        }
+                        colorFinal = colorBase;
 
-                        gbt_dibujar_pixel(posXPantalla + pixelXBloque, posYPantalla + pixelYBloque, colorFinal); // Dibuja el pixel en cuestión en la posición correspondiente
+                        // Borde superior e izquierdo: brillo (2 píxeles)
+                        if (pixelYBloque <= 1 || pixelXBloque <= 1)
+                            colorFinal = colorBrillo [colorBase];
+                        else if (pixelYBloque >= tamMino - 2 || pixelXBloque >= tamMino - 2)
+                            colorFinal = colorSombra [colorBase]; // Borde inferior y derecho: sombra
+
+                        gbt_dibujar_pixel(posXPantalla + pixelXBloque, posYPantalla + pixelYBloque, colorFinal);
                     }
                 }
             }
@@ -111,91 +111,82 @@ void DIBUJAR ()
     }
 }
 
-
+// Pinta toda la ventana con fondo azul oscuro (color 1) y una cuadrícula decorativa cada 16px (color 8)
 void DIBUJARFONDO ()
 {
-   int x, y; // Horizontal, vertical
-   int color; // Variable color
+    int x, y;
+    int color;
 
-    for (y = 0; y < altoVentana; y ++) // Recorre verticalmente la ventana
+    for (y = 0; y < altoVentana; y ++)
     {
-        for (x = 0; x < anchoVentana; x ++) // Recorre horizontalmente la ventana
+        for (x = 0; x < anchoVentana; x ++)
         {
-            color = 1; // Define el color del fondo como azul oscuro
-
-            if ((x % 16 == 0) || (y % 16 == 0)) // Genera la cuadrícula en color gris
-            {
+            color = 1;
+            // Cuadrícula decorativa: pinta de gris las líneas cada 16 píxeles
+            if ((x % 16 == 0) || (y % 16 == 0))
                 color = 8;
-            }
-            gbt_dibujar_pixel(x, y, color); // Dibuja
+            gbt_dibujar_pixel(x, y, color);
         }
-    } 
+    }
 }
 
+// Dibuja un marco alrededor del tablero usando DIBUJARMARCOGENERICO
 void DIBUJARMARCO ()
 {
-    int x0 = offsetHorizontal - 4;                // Esquina superior izquierda
+    int x0 = offsetHorizontal - 4;
     int y0 = offsetVertical - 4;
-    int ancho = columnasTablero * tamMino + 8;    // Ancho del marco
-    int alto  = filasTablero * tamMino + 8;       // Alto del marco
-
-    // Reutiliza la función genérica (fondo color 0 = negro / "transparente" sobre el fondo del tablero)
+    int ancho = columnasTablero * tamMino + 8;
+    int alto  = filasTablero * tamMino + 8;
     DIBUJARMARCOGENERICO(x0, y0, ancho, alto, 0);
 }
 
+// Dibuja un marco rectangular genérico con borde 3D (brillo arriba/izquierda, sombra abajo/derecha)
 void DIBUJARMARCOGENERICO (int x0, int y0, int ancho, int alto, int colorFondo)
 {
     int x, y;
     int color;
 
-    for (y = y0; y < y0 + alto; y ++)            // Recorre verticalmente el marco
+    for (y = y0; y < y0 + alto; y ++)
     {
-        for (x = x0; x < x0 + ancho; x ++)       // Recorre horizontalmente el marco
+        for (x = x0; x < x0 + ancho; x ++)
         {
-            color = colorFondo;                  // Color de fondo de la caja
+            color = colorFondo;
 
-            if (y <= y0 + 1 || x <= x0 + 1)      // Borde superior o izquierdo -> brillo
-            {
-                color = 7;                       // Gris claro
-            }
-            
-             else if (y >= y0 + alto - 2 || x >= x0 + ancho - 2) // Borde inferior o derecho
-            {
-                color = 7;                       // Gris oscuro
-            }
+            if (y <= y0 + 1 || x <= x0 + 1)           // Bordes superior e izquierdo → gris claro (brillo)
+                color = 7;
+            else if (y >= y0 + alto - 2 || x >= x0 + ancho - 2) // Bordes inferior y derecho → gris oscuro (sombra)
+                color = 8;
 
             gbt_dibujar_pixel(x, y, color);
         }
     }
 }
 
+// Dibuja la grilla de líneas divisorias entre celdas del tablero (color 8, gris oscuro)
 void DIBUJARGRILLA ()
 {
     int fila, columna;
     int x, y;
 
-    for (fila = 0; fila <= filasTablero; fila ++) // Líneas horizontales
+    // Líneas horizontales
+    for (fila = 0; fila <= filasTablero; fila ++)
     {
         y = offsetVertical + fila * tamMino;
-
         for (x = offsetHorizontal; x <= offsetHorizontal + columnasTablero * tamMino; x ++)
-        {
-            gbt_dibujar_pixel(x, y, 8); // gris oscuro
-        }
+            gbt_dibujar_pixel(x, y, 8);
     }
 
-    for (columna = 0; columna <= columnasTablero; columna ++) // Líneas verticales
+    // Líneas verticales
+    for (columna = 0; columna <= columnasTablero; columna ++)
     {
         x = offsetHorizontal + columna * tamMino;
-
         for (y = offsetVertical; y <= offsetVertical + filasTablero * tamMino; y ++)
-        {
-            gbt_dibujar_pixel(x, y, 8); // gris oscuro
-        }
+            gbt_dibujar_pixel(x, y, 8);
     }
 }
 
-void DIBUJARCARACTER (int posXPantalla, int posYPantalla, int caracter, int anchoCaracter, int color) // PONER COMENTARIOS
+// Dibuja un carácter en la pantalla usando la fuente 8×8 (anchoCaracter8) o 8×16 (anchoCaracter16)
+void DIBUJARCARACTER (int posXPantalla, int posYPantalla, int caracter, int anchoCaracter, int color)
 {
     int filaCaracter, columnaCaracter;
     for (filaCaracter = 0; filaCaracter < altoCaracter; filaCaracter ++)
@@ -205,44 +196,41 @@ void DIBUJARCARACTER (int posXPantalla, int posYPantalla, int caracter, int anch
             if (anchoCaracter == anchoCaracter8)
             {
                 if (fuente8x8 [caracter][filaCaracter][columnaCaracter] == 1)
-                {
                     gbt_dibujar_pixel (posXPantalla + columnaCaracter, posYPantalla + filaCaracter, color);
-                }
             }
             if (anchoCaracter == anchoCaracter16)
             {
                 if (fuente8x16 [caracter][filaCaracter][columnaCaracter] == 1)
-                {
                     gbt_dibujar_pixel (posXPantalla + columnaCaracter, posYPantalla + filaCaracter, color);
-                }
             }
         }
     }
 }
 
-void DIBUJARTEXTO (int posXPantalla, int posYPantalla, char *texto, int anchoCaracter) // PONER COMENTARIOS
+// Dibuja una cadena de texto en la pantalla con fuente monoespaciada
+// Soporta A-Z, 0-9 y espacio
+void DIBUJARTEXTO (int posXPantalla, int posYPantalla, char *texto, int anchoCaracter)
 {
     int i = 0, caracter;
     while (texto [i] != '\0')
     {
         caracter = -1;
         if (texto [i] >= 'A' && texto [i] <= 'Z')
-        {
-            caracter = texto [i] - 'A';
-        }
+            caracter = texto [i] - 'A';       // 0-25
         else if (texto [i] >= '0' && texto [i] <= '9')
-        {
-            caracter = 26 + (texto [i] - '0');
-        }
+            caracter = 26 + (texto [i] - '0'); // 26-35
         else if (texto [i] == ' ')
-        {
-            caracter = 36;
-        }
-        if (caracter != -1) DIBUJARCARACTER (posXPantalla + i * anchoCaracter, posYPantalla, caracter, anchoCaracter, 7);
+            caracter = 36;                     // espacio
+
+        if (caracter != -1)
+            DIBUJARCARACTER (posXPantalla + i * anchoCaracter, posYPantalla, caracter, anchoCaracter, 7);
         i++ ;
     }
 }
 
+// Dibuja el indicador CHEAT debajo del panel NEXT
+// Color 7 (gris claro) si está disponible o activo, color 8 (gris oscuro) si en cooldown
+// Fondo negro para asegurar legibilidad en cualquier paleta
 void DIBUJARCHEAT ()
 {
     int ancho = (int)strlen("CHEAT") * anchoCaracter8;
@@ -258,6 +246,9 @@ void DIBUJARCHEAT ()
     }
 }
 
+// Dibuja texto con fuente proporcional (cada letra tiene su propio ancho)
+// Usa anchoProp[] para determinar el ancho de cada carácter y fuenteProp[][][] para los píxeles
+// Interletrado de 1 píxel entre caracteres consecutivos
 void DIBUJARTEXTOPROP (int x, int y, const char *texto, int color)
 {
     int px = x;
@@ -280,37 +271,36 @@ void DIBUJARTEXTOPROP (int x, int y, const char *texto, int color)
                 for (int col = 0; col < w; col++)
                     if (fuenteProp[idx][fil][col])
                         gbt_dibujar_pixel(px + col, y + fil, color);
-            px += w + 1; // +1 de interletrado
+            px += w + 1; // Ancho del carácter + 1 de interletrado
         }
         else
         {
-            px += 5; // carácter desconocido
+            px += 5; // Carácter desconocido: salto fijo de 5 píxeles
         }
     }
 }
 
+// Dibuja el panel NEXT (próxima pieza) a la izquierda del tablero
+// Muestra un marco con la etiqueta "NEXT" y una miniatura centrada de la próxima pieza
 void DIBUJARPROXIMA ()
 {
     int f, c, px, py, x0, y0;
     int colorBase, colorFinal, pixelX, pixelY;
 
-    // Posición del panel NEXT (a la izquierda del tablero)
     x0 = offsetHorizontal - 80;
     y0 = offsetVertical;
 
-    // Recuadro y fondo del panel NEXT
-    int anchoPanel = 4 * tamMino + 16; // 4 minos + padding
-    int altoPanel  = 4 * tamMino + 26; // texto + 4 minos + padding
+    int anchoPanel = 4 * tamMino + 16;
+    int altoPanel  = 4 * tamMino + 26;
     DIBUJARMARCOGENERICO(x0 - 4, y0 - 4, anchoPanel, altoPanel, 0);
 
     DIBUJARTEXTO(x0, y0, "NEXT", anchoCaracter8);
 
+    // Durante la animación de borrado no se dibuja la pieza (el tablero cambia)
     if (animacion_borrado_activa)
-    {
         return;
-    }
 
-    // Calcular bounding box de la pieza para centrarla en el panel
+    // Calcula el bounding box de la pieza para centrarla en el panel
     int minC = 4, maxC = -1, minF = 4, maxF = -1;
     for (f = 0; f < 4; f++)
         for (c = 0; c < 4; c++)
@@ -322,13 +312,13 @@ void DIBUJARPROXIMA ()
                 if (f > maxF) maxF = f;
             }
 
-    int anchoInterior = anchoPanel - 16; // interior del panel (sin padding)
+    int anchoInterior = anchoPanel - 16;
     int anchoPieza = (maxC - minC + 1) * tamMino;
     int altoPieza  = (maxF - minF + 1) * tamMino;
     int offsetX = (anchoInterior - anchoPieza) / 2 - minC * tamMino;
     int offsetY = (anchoInterior - altoPieza)  / 2 - minF * tamMino;
 
-    // Dibujar miniatura de la próxima pieza centrada
+    // Dibuja los bloques de la miniatura con efecto 3D (brillo/sombra)
     for (f = 0; f < 4; f++)
     {
         for (c = 0; c < 4; c++)
@@ -354,9 +344,11 @@ void DIBUJARPROXIMA ()
     }
 }
 
-void DIBUJARPUNTAJE () // PONER COMENTARIOS
+// Muestra las estadísticas (SCORE, LEVEL, LINES, SPEED) a la derecha del tablero
+void DIBUJARPUNTAJE ()
 {
     char textoPuntaje [20];
+
     sprintf (textoPuntaje, "SCORE %d", puntaje);
     DIBUJARTEXTO (offsetHorizontal + columnasTablero * tamMino + tamMino, offsetVertical, textoPuntaje, anchoCaracter8);
 
@@ -368,24 +360,23 @@ void DIBUJARPUNTAJE () // PONER COMENTARIOS
 
     sprintf (textoPuntaje, "SPEED %d", velocidad);
     DIBUJARTEXTO (offsetHorizontal + columnasTablero * tamMino + tamMino, offsetVertical + 60, textoPuntaje, anchoCaracter8);
-
 }
 
-void DIBUJARTITULO () // PONER COMENTARIOS
+// Dibuja el título "TETRIS" en la pantalla de inicio con letras de colores alternados
+void DIBUJARTITULO ()
 {
     char titulo [] = "TETRIS";
     int colores [] = {12, 14, 10, 11, 13, 9};
     int i, caracter;
-    for (i = 0; i < 6; i ++) // 6 = cantidad letras TETRIS
+    for (i = 0; i < 6; i ++)
     {
         if (titulo [i] >= 'A' && titulo [i] <= 'Z')
-        {
             caracter = titulo [i] - 'A';
-        }
         DIBUJARCARACTER (100 + i * anchoCaracter16, 50, caracter, anchoCaracter16, colores [i]);
-    } 
+    }
 }
 
+// Pantalla de pausa superpuesta: marco centrado con "PAUSA" y opciones
 void DIBUJARPAUSA ()
 {
     int anchoCaja = 200;
@@ -404,21 +395,16 @@ void DIBUJARPAUSA ()
     DIBUJARTEXTO(centroX - ((int)strlen(linea2) * anchoCaracter8) / 2, y0 + 30, linea2, anchoCaracter8);
 }
 
+// Pantalla de Game Over superpuesta: marco centrado con score, opciones reiniciar/salir
 void DIBUJARGAMEOVER ()
 {
-    // La línea más larga "ENTER MENU PRINCIPAL" = 20*8 = 160px + padding -> 180px
     int anchoCaja = 180;
     int altoCaja  = 90;
-
-    // Centro de la ventana
     int centroX = anchoVentana / 2;
     int centroY = altoVentana  / 2;
-
-    // Esquina superior izquierda de la caja
     int x0 = centroX - anchoCaja / 2;
     int y0 = centroY - altoCaja  / 2;
 
-    // Dibuja el marco con fondo negro
     DIBUJARMARCOGENERICO(x0, y0, anchoCaja, altoCaja, 0);
 
     char puntajeFinal[32];
@@ -430,20 +416,17 @@ void DIBUJARGAMEOVER ()
     char *linea4 = "ENTER MENU PRINCIPAL";
     char *linea5 = "Q     SALIR";
 
-    int y1 = y0 + 8;
-    int y2 = y0 + 22;
-    int y3 = y0 + 42;
-    int y4 = y0 + 55;
-    int y5 = y0 + 68;
-
-    DIBUJARTEXTO(centroX - ((int)strlen(linea1) * anchoCaracter8) / 2, y1, linea1, anchoCaracter8);
-    DIBUJARTEXTO(centroX - ((int)strlen(linea2) * anchoCaracter8) / 2, y2, linea2, anchoCaracter8);
-    DIBUJARTEXTO(centroX - ((int)strlen(linea3) * anchoCaracter8) / 2, y3, linea3, anchoCaracter8);
-    DIBUJARTEXTO(centroX - ((int)strlen(linea4) * anchoCaracter8) / 2, y4, linea4, anchoCaracter8);
-    DIBUJARTEXTO(centroX - ((int)strlen(linea5) * anchoCaracter8) / 2, y5, linea5, anchoCaracter8);
+    DIBUJARTEXTO(centroX - ((int)strlen(linea1) * anchoCaracter8) / 2, y0 + 8,  linea1, anchoCaracter8);
+    DIBUJARTEXTO(centroX - ((int)strlen(linea2) * anchoCaracter8) / 2, y0 + 22, linea2, anchoCaracter8);
+    DIBUJARTEXTO(centroX - ((int)strlen(linea3) * anchoCaracter8) / 2, y0 + 42, linea3, anchoCaracter8);
+    DIBUJARTEXTO(centroX - ((int)strlen(linea4) * anchoCaracter8) / 2, y0 + 55, linea4, anchoCaracter8);
+    DIBUJARTEXTO(centroX - ((int)strlen(linea5) * anchoCaracter8) / 2, y0 + 68, linea5, anchoCaracter8);
 }
 
-void DIBUJARINICIO(char *nombre) // PONER COMENTARIOS
+// Pantalla de ingreso de nombre del jugador
+// Teclado virtual con letras A-Z, 0-9, espacio, retroceso; ESC cancela (nombre vacío)
+// Muestra el logo TETRIS, "INGRESE SU NOMBRE:", el nombre con cursor y la instrucción ESC
+void DIBUJARINICIO(char *nombre)
 {
     int i = 0;
     int terminado = 0;
@@ -460,15 +443,13 @@ void DIBUJARINICIO(char *nombre) // PONER COMENTARIOS
         {
             if (tecla == GBTK_ESCAPE)
             {
-                nombre[0] = '\0'; // Señal de cancelación: nombre vacío
-                return;           // Vuelve al menú principal
+                nombre[0] = '\0'; // Señal de cancelación
+                return;
             }
             else if (tecla == GBTK_ENTER)
             {
-                if (i > 0)
-                {
+                if (i > 0)      // No permite nombre vacío
                     terminado = 1;
-                }
             }
             else if (tecla == GBTK_RETROCESO)
             {
@@ -480,9 +461,9 @@ void DIBUJARINICIO(char *nombre) // PONER COMENTARIOS
             }
             else if (tecla >= 'a' && tecla <= 'z')
             {
-                if (i < 13)
+                if (i < 13)     // Máximo 13 caracteres
                 {
-                    nombre[i] = tecla - 32; // mayúscula
+                    nombre[i] = tecla - 32; // Convierte a mayúscula
                     i++;
                     nombre[i] = '\0';
                 }
@@ -507,39 +488,31 @@ void DIBUJARINICIO(char *nombre) // PONER COMENTARIOS
             }
         }
 
-                // --- DIBUJADO ---
+        // --- DIBUJADO ---
         gbt_borrar_backbuffer(0);
         DIBUJARFONDO();
 
-        // Logo TETRIS centrado horizontalmente (misma posici�n que en el men� principal)
+        // Logo TETRIS centrado
         int logoY = (altoVentana / 2 - 110) / 2;
         if (logoY < 3) logoY = 3;
         DIBUJAR_LOGO_COMPLETO((anchoVentana - 167) / 2, logoY);
 
-        // Grupo de texto centrado debajo del logo
-        int grupoAlto = 8 + 10 + 8 + 10 + 8;
-        int grupoY = logoY + 110 + (altoVentana - (logoY + 110) - grupoAlto) / 2;
-        int textY = grupoY;
+        // Grupo de texto debajo del logo
+        int textY = logoY + 110 + (altoVentana - (logoY + 110) - 8 - 10 - 8 - 10 - 8) / 2;
         int nameY = textY + 18;
         int escY = nameY + 18;
         DIBUJARTEXTO((anchoVentana - 18 * anchoCaracter8) / 2, textY, "INGRESE SU NOMBRE:", anchoCaracter8);
-
-        // Nombre centrado
         DIBUJARTEXTO((anchoVentana - 13 * anchoCaracter8) / 2, nameY, nombre, anchoCaracter8);
 
-        // Cursor
+        // Cursor parpadeante (carácter 37 = '_')
         if (i < 13)
         {
             DIBUJARCARACTER(
                 (anchoVentana - 13 * anchoCaracter8) / 2 + i * anchoCaracter8,
-                nameY,
-                37,
-                anchoCaracter8,
-                7
+                nameY, 37, anchoCaracter8, 7
             );
         }
 
-        // Instruccion ESC
         DIBUJARTEXTO((anchoVentana - 19 * anchoCaracter8) / 2, escY, "ESC VOLVER AL MENU", anchoCaracter8);
 
         gbt_volcar_backbuffer();

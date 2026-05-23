@@ -1,7 +1,12 @@
 #include "sprites.h"
 #include <stdlib.h>
+#include <string.h>
 
-// Definición de las formas de las piezas
+// ====================================================================
+// FORMAS DE LAS PIEZAS (11 tipos)
+// ====================================================================
+// Cada pieza se define como matriz 4×4 donde 1 = mino presente, 0 = vacío.
+// Las piezas 0-6 son las 7 clásicas del Tetris; 7-10 son las de modo DX.
 int piezas [cantPiezas][4][4] =
 {
     // Pieza I (Tipo 0)
@@ -70,17 +75,17 @@ int piezas [cantPiezas][4][4] =
 
     // Pieza c (Tipo 8) - 5 minos en forma de C
     {
-        {1, 1, 0, 0},
-        {1, 0, 0, 0},
-        {1, 1, 0, 0},
+        {0, 1, 1, 0},
+        {0, 1, 0, 0},
+        {0, 1, 1, 0},
         {0, 0, 0, 0},
     },
 
     // Pieza p (Tipo 9) - 5 minos en forma de P
     {
-        {1, 1, 1, 0},
-        {1, 0, 1, 0},
-        {0, 0, 0, 0},
+        {0, 1, 1, 0},
+        {0, 1, 1, 0},
+        {0, 1, 0, 0},
         {0, 0, 0, 0},
     },
 
@@ -93,7 +98,11 @@ int piezas [cantPiezas][4][4] =
     },
 };
 
-// Definición de las letras y números en 8x8
+// ====================================================================
+// FUENTE MONOESPACIADA 8×8 (para CGA y escalados a 8px)
+// ====================================================================
+// 38 caracteres: A-Z (0-25), 0-9 (26-35), espacio (36), guión bajo (37)
+// Cada carácter es una matriz 8×8 donde 1 = píxel encendido.
 int fuente8x8 [cantCaracteres][altoCaracter][anchoCaracter8] = 
 {
     // A
@@ -554,7 +563,10 @@ int fuente8x8 [cantCaracteres][altoCaracter][anchoCaracter8] =
 
 };
 
-// Definición de las letras y números en 8x16
+// ====================================================================
+// FUENTE MONOESPACIADA 8×16 (para VGA, cada carácter es 16 píxeles de ancho)
+// ====================================================================
+// Mismos caracteres que fuente8x8 pero con el doble de ancho para mayor definición.
 int fuente8x16 [cantCaracteres][altoCaracter][anchoCaracter16] = 
 {
 
@@ -1014,4 +1026,57 @@ int fuente8x16 [cantCaracteres][altoCaracter][anchoCaracter16] =
         {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0},
     }
 };
+
+// ====================================================================
+// FUENTE PROPORCIONAL (ancho variable)
+// ====================================================================
+// Almacena los datos recortados (sin columnas vacías en los bordes)
+// de fuente8x8. GENERAR_FUENTE_PROPORCIONAL() llena estos arrays.
+int fuenteProp[cantCaracteres][altoCaracter][MAX_ANCHO_PROP];
+int anchoProp[cantCaracteres];
+
+// Genera la fuente proporcional a partir de la 8×8.
+// Para cada carácter, recorta las columnas vacías (todo 0) de los bordes
+// izquierdo y derecho, copiando solo las columnas con píxeles a fuenteProp[].
+// anchoProp[c] guarda el ancho real de cada carácter.
+void GENERAR_FUENTE_PROPORCIONAL(void)
+{
+    memset(anchoProp, 0, sizeof(anchoProp));
+    memset(fuenteProp, 0, sizeof(fuenteProp));
+
+    for (int c = 0; c < cantCaracteres; c++)
+    {
+        // Encuentra la primera columna con al menos un píxel encendido (izquierda)
+        int colIzq = 0;
+        for (int x = 0; x < anchoCaracter8; x++)
+        {
+            int tienePixel = 0;
+            for (int y = 0; y < altoCaracter; y++)
+                if (fuente8x8[c][y][x]) { tienePixel = 1; break; }
+            if (tienePixel) { colIzq = x; break; }
+        }
+
+        // Encuentra la última columna con píxeles (derecha)
+        int colDer = anchoCaracter8 - 1;
+        for (int x = anchoCaracter8 - 1; x >= 0; x--)
+        {
+            int tienePixel = 0;
+            for (int y = 0; y < altoCaracter; y++)
+                if (fuente8x8[c][y][x]) { tienePixel = 1; break; }
+            if (tienePixel) { colDer = x; break; }
+        }
+
+        // Ancho del carácter recortado (mínimo 1)
+        int w = colDer - colIzq + 1;
+        if (w < 1) w = 1;
+
+        // Copia las columnas recortadas a fuenteProp[]
+        for (int y = 0; y < altoCaracter; y++)
+            for (int x = 0; x < w && x < MAX_ANCHO_PROP; x++)
+                if (colIzq + x < anchoCaracter8)
+                    fuenteProp[c][y][x] = fuente8x8[c][y][colIzq + x];
+
+        anchoProp[c] = w;
+    }
+}
 

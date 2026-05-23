@@ -5,33 +5,29 @@
 #include <string.h>
 #include <stdio.h>
 
-// Flag global: si se presiona Q en cualquier submenú, se activa para propagar la salida
+// Flag global: si se presiona Q en cualquier submenú, propaga la salida hasta main
 static int g_salir_juego = 0;
 
-// Nombres de paletas para mostrar en el menú
+// Nombres para mostrar en el menú de opciones
 static const char* NOMBRES_PALETAS[CANT_PALETAS] = {
-    "CGA",
-    "GAME BOY",
-    "ATARI",
+    "CGA", "GAME BOY", "ATARI",
 };
 
 static const char* NOMBRES_RESOLUCIONES[2] = {
-    "CGA 320X200",
-    "VGA 640X480",
+    "CGA 320X200", "VGA 640X480",
 };
 
 static const char* NOMBRES_MODOS[2] = {
-    "CLASICO",
-    "DX",
+    "CLASICO", "DX",
 };
 
 // -------------------------------------------------------
 // Helpers internos de dibujo
 // -------------------------------------------------------
 
-/**
- * @brief Dibuja una opción de menú centrada, con o sin selección resaltada.
- */
+// Dibuja una opción de menú centrada horizontalmente.
+// Si seleccionada==1, pinta un rectángulo de fondo negro y un carácter 23 (X)
+// a la izquierda como indicador de selección.
 static void DIBUJAR_OPCION(int posY, const char *texto, int seleccionada)
 {
     int ancho = CONFIG_ANCHO();
@@ -40,33 +36,24 @@ static void DIBUJAR_OPCION(int posY, const char *texto, int seleccionada)
 
     if (seleccionada)
     {
-        // Fondo resaltado: color 0 (negro en todas las paletas) para que contraste siempre
+        // Fondo negro para resaltar la opción seleccionada
         DIBUJAR_RECTANGULO(posX - 4, posY - 1, largo * anchoCaracter8 + 8, altoCaracter + 2, COLOR_NEGRO);
-        // Flecha indicadora: color 7 (gris claro/verde claro) para que sea visible en todas las paletas
-        DIBUJARCARACTER(posX - 12, posY, 23, anchoCaracter8, COLOR_GRIS_CLARO); // 'X' selector
+        // Carácter 23 (X) como indicador de selección (visible en todas las paletas con color 7)
+        DIBUJARCARACTER(posX - 12, posY, 23, anchoCaracter8, COLOR_GRIS_CLARO);
         DIBUJARTEXTO(posX, posY, (char*)texto, anchoCaracter8);
     }
     else
-    {
         DIBUJARTEXTO(posX, posY, (char*)texto, anchoCaracter8);
-    }
 }
 
-/**
- * @brief Dibuja el logo de Tetris centrado en la parte superior.
- * El Y del logo se calcula para que quede proporcionalmente cerca de las opciones.
- */
+// Dibuja el logo TETRIS en la cabecera del menú, centrado en el tercio superior
 static void DIBUJAR_CABECERA(void)
 {
     int ancho = CONFIG_ANCHO();
     int alto  = CONFIG_ALTO();
-    // El logo mide 167px de ancho (definido en inicio.c)
     int logoAncho = 167;
-    int logoAlto  = 110; // aprox: 50 (top) + 50 (palo) + 10 (padding)
+    int logoAlto  = 110;
     int logoX = (ancho - logoAncho) / 2;
-    // El logo ocupa desde logoY hasta logoY+logoAlto.
-    // Las opciones arrancan en primerItemY = alto*0.55 aprox.
-    // Centramos el logo en el tercio superior de la pantalla.
     int logoY = (alto / 2 - logoAlto) / 2;
     if (logoY < 3) logoY = 3;
     DIBUJAR_LOGO_COMPLETO(logoX, logoY);
@@ -76,16 +63,20 @@ static void DIBUJAR_CABECERA(void)
 // MENU PRINCIPAL
 // -------------------------------------------------------
 
+// Muestra el menú principal con opciones dinámicas (JUGAR, CONTINUAR si hay guardado,
+// ESTADISTICAS, INSTRUCCIONES, OPCIONES, SALIR).
+// Navegación con flechas arriba/abajo, Enter para seleccionar.
+// ESC salta a SALIR. Q cierra todo el juego.
+// Retorna: MENU_RESULTADO_JUGAR, MENU_RESULTADO_CONTINUAR o MENU_RESULTADO_SALIR.
 eMenuResultado MENU_PRINCIPAL(void)
 {
-    g_salir_juego = 0; // Resetear flag al entrar al menú principal
+    g_salir_juego = 0;
 
     while (1)
     {
-        // Detectar si hay partida guardada (puede cambiar entre frames si se borró)
         int hay_guardado = PARTIDA_EXISTE();
 
-        // Construir lista de opciones dinámica
+        // Construye la lista de opciones según haya o no partida guardada
         const char *opciones[6];
         eMenuResultado resultados[6];
         int CANT_OPCIONES = 0;
@@ -102,7 +93,7 @@ eMenuResultado MENU_PRINCIPAL(void)
         }
 
         opciones[CANT_OPCIONES]   = "ESTADISTICAS";
-        resultados[CANT_OPCIONES] = (eMenuResultado)-1; // submenú
+        resultados[CANT_OPCIONES] = (eMenuResultado)-1; // -1 indica submenú
         CANT_OPCIONES++;
 
         opciones[CANT_OPCIONES]   = "INSTRUCCIONES";
@@ -118,12 +109,11 @@ eMenuResultado MENU_PRINCIPAL(void)
         CANT_OPCIONES++;
 
         int seleccion = 0;
-
-        // Loop de este frame (re-entra si cambia hay_guardado)
         int rehacerMenu = 0;
+
         while (!rehacerMenu)
         {
-            // Recalcular layout
+            // Recalcula layout (puede cambiar tras opciones si se cambió resolución)
             int alto = CONFIG_ALTO();
             int logoAlto  = 110;
             int logoY     = (alto / 2 - logoAlto) / 2;
@@ -137,11 +127,13 @@ eMenuResultado MENU_PRINCIPAL(void)
 
             gbt_procesar_entrada();
 
+            // Navegación con flechas
             if (gbt_tecla_presionada(GBTK_ARRIBA))
                 seleccion = (seleccion - 1 + CANT_OPCIONES) % CANT_OPCIONES;
             if (gbt_tecla_presionada(GBTK_ABAJO))
                 seleccion = (seleccion + 1) % CANT_OPCIONES;
 
+            // Enter para seleccionar
             if (gbt_tecla_presionada(GBTK_ENTER))
             {
                 eMenuResultado r = resultados[seleccion];
@@ -149,18 +141,19 @@ eMenuResultado MENU_PRINCIPAL(void)
                     return r;
                 if (r == MENU_RESULTADO_SALIR)
                     return r;
-                // Submenús
+                // Submenús: se ejecutan y al volver se rehace el menú por si cambió algo
                 if (r == (eMenuResultado)-1) { MENU_ESTADISTICAS();  if (g_salir_juego) return MENU_RESULTADO_SALIR; rehacerMenu = 1; }
                 if (r == (eMenuResultado)-2) { MENU_INSTRUCCIONES(); if (g_salir_juego) return MENU_RESULTADO_SALIR; rehacerMenu = 1; }
                 if (r == (eMenuResultado)-3) { MENU_OPCIONES();      if (g_salir_juego) return MENU_RESULTADO_SALIR; rehacerMenu = 1; }
             }
 
+            // Q = salida global, ESC = salta a la opción SALIR
             if (gbt_tecla_sostenida(GBTK_q))
                 return MENU_RESULTADO_SALIR;
             if (gbt_tecla_presionada(GBTK_ESCAPE))
-                seleccion = CANT_OPCIONES - 1; // Mover a SALIR
+                seleccion = CANT_OPCIONES - 1;
 
-            // Dibujado
+            // Dibujado del frame
             gbt_borrar_backbuffer(COLOR_NEGRO);
             DIBUJARFONDO();
             DIBUJAR_CABECERA();
@@ -178,48 +171,48 @@ eMenuResultado MENU_PRINCIPAL(void)
 // MENU OPCIONES
 // -------------------------------------------------------
 
+// Menú de opciones: paleta, resolución, velocidad, modo, ancho tablero, guardar y volver.
+// Usa una copia temporal (config_temp) y solo guarda al seleccionar "GUARDAR Y VOLVER".
+// ESC vuelve sin guardar, Q sale del juego.
 void MENU_OPCIONES(void)
 {
-    // Ítems configurables
     const int CANT_ITEMS = 6;
-    // 0: Paleta, 1: Resolución, 2: Velocidad inicial, 3: Modo juego, 4: Ancho tablero, 5: Guardar y volver
+    // 0=Paleta, 1=Resolución, 2=Velocidad, 3=Modo, 4=Ancho tablero, 5=Guardar
     int seleccion = 0;
-
     int alto  = CONFIG_ALTO();
     int ancho = CONFIG_ANCHO();
     int primerItemY = alto / 2 - 30;
     int separacion  = 20;
 
-    // Copia local para editar sin afectar la config hasta guardar
-    sConfig config_temp = config_actual;
+    sConfig config_temp = config_actual; // Copia de trabajo
 
     while (1)
     {
-        // Recalcular por si cambia la resolución al aplicar config
+        // Recalcular layout por si cambió resolución
         alto  = CONFIG_ALTO();
         ancho = CONFIG_ANCHO();
         primerItemY = alto / 2 - 30;
 
         gbt_procesar_entrada();
 
+        // Navegación
         if (gbt_tecla_presionada(GBTK_ARRIBA))
             seleccion = (seleccion - 1 + CANT_ITEMS) % CANT_ITEMS;
-
         if (gbt_tecla_presionada(GBTK_ABAJO))
             seleccion = (seleccion + 1) % CANT_ITEMS;
 
-        // Cambiar valor con izquierda/derecha
+        // Izquierda/Derecha: cambian el valor del ítem seleccionado
         if (gbt_tecla_presionada(GBTK_IZQUIERDA))
         {
-            if (seleccion == 0) // Paleta
+            if (seleccion == 0) // Paleta: ciclo
                 config_temp.paleta = (config_temp.paleta - 1 + CANT_PALETAS) % CANT_PALETAS;
-            else if (seleccion == 1) // Resolución
+            else if (seleccion == 1) // Resolución: 0↔1
                 config_temp.resolucion = (config_temp.resolucion - 1 + 2) % 2;
-            else if (seleccion == 2) // Velocidad
+            else if (seleccion == 2) // Velocidad: ciclo
                 config_temp.velocidad_inicial = (config_temp.velocidad_inicial - 1 + CANT_VELOCIDADES) % CANT_VELOCIDADES;
-            else if (seleccion == 3) // Modo juego
+            else if (seleccion == 3) // Modo: 0↔1
                 config_temp.modo_juego = (config_temp.modo_juego - 1 + 2) % 2;
-            else if (seleccion == 4) // Ancho tablero
+            else if (seleccion == 4) // Ancho: decremento con límite inferior 8
             {
                 config_temp.ancho_tablero--;
                 if (config_temp.ancho_tablero < 8) config_temp.ancho_tablero = MAX_COLUMNAS;
@@ -233,19 +226,19 @@ void MENU_OPCIONES(void)
                 config_temp.resolucion = (config_temp.resolucion + 1) % 2;
             else if (seleccion == 2)
                 config_temp.velocidad_inicial = (config_temp.velocidad_inicial + 1) % CANT_VELOCIDADES;
-            else if (seleccion == 3) // Modo juego
+            else if (seleccion == 3)
                 config_temp.modo_juego = (config_temp.modo_juego + 1) % 2;
-            else if (seleccion == 4) // Ancho tablero
+            else if (seleccion == 4) // Ancho: incremento con límite superior MAX_COLUMNAS
             {
                 config_temp.ancho_tablero++;
                 if (config_temp.ancho_tablero > MAX_COLUMNAS) config_temp.ancho_tablero = 8;
             }
         }
 
-        // Confirmar / guardar
+        // Enter: si está en "GUARDAR Y VOLVER", persiste los cambios
         if (gbt_tecla_presionada(GBTK_ENTER))
         {
-            if (seleccion == 5) // Guardar y volver
+            if (seleccion == 5)
             {
                 config_actual = config_temp;
                 piezas_en_uso = (config_actual.modo_juego == MODO_DX) ? MAX_PIEZAS : 7;
@@ -256,10 +249,10 @@ void MENU_OPCIONES(void)
             }
         }
 
-        // Escapar sin guardar
+        // ESC: vuelve sin guardar
         if (gbt_tecla_presionada(GBTK_ESCAPE) || gbt_tecla_sostenida(GBTK_ESCAPE))
             return;
-        // Q sale del juego completamente desde cualquier menú
+        // Q: sale del juego
         if (gbt_tecla_sostenida(GBTK_q))
         {
             g_salir_juego = 1;
@@ -274,35 +267,28 @@ void MENU_OPCIONES(void)
         int tituloX = (ancho - (int)strlen("OPCIONES") * anchoCaracter8) / 2;
         DIBUJARTEXTO(tituloX, primerItemY - 20, "OPCIONES", anchoCaracter8);
 
-        // Ítem 0: Paleta
+        // Ítems: cada uno con su valor actual
         {
             char linea[40];
             sprintf(linea, "PALETA  %s", NOMBRES_PALETAS[config_temp.paleta]);
             DIBUJAR_OPCION(primerItemY + 0 * separacion, linea, seleccion == 0);
         }
-
-        // Ítem 1: Resolución
         {
             char linea[40];
             sprintf(linea, "RESOL   %s", NOMBRES_RESOLUCIONES[config_temp.resolucion]);
             DIBUJAR_OPCION(primerItemY + 1 * separacion, linea, seleccion == 1);
         }
-
-        // Ítem 2: Velocidad
         {
             char linea[40];
             sprintf(linea, "VEL     %s", nombres_velocidades[config_temp.velocidad_inicial]);
             DIBUJAR_OPCION(primerItemY + 2 * separacion, linea, seleccion == 2);
         }
-
-        // Ítem 3: Modo juego
         {
             char linea[40];
             sprintf(linea, "MODO    %s", NOMBRES_MODOS[config_temp.modo_juego]);
             DIBUJAR_OPCION(primerItemY + 3 * separacion, linea, seleccion == 3);
         }
-
-        // Ítem 4: Ancho tablero (solo editable en modo DX)
+        // Ancho: editable solo en modo DX; en clásico muestra "10 (FIJO)"
         {
             char linea[40];
             if (config_temp.modo_juego == MODO_DX)
@@ -312,10 +298,9 @@ void MENU_OPCIONES(void)
             DIBUJAR_OPCION(primerItemY + 4 * separacion, linea, seleccion == 4);
         }
 
-        // Ítem 5: Guardar y volver
         DIBUJAR_OPCION(primerItemY + 5 * separacion, "GUARDAR Y VOLVER", seleccion == 5);
 
-        // Instrucción de escape
+        // Leyenda
         DIBUJARTEXTO((ancho - (int)strlen("ESC VOLVER SIN GUARDAR") * anchoCaracter8) / 2,
                      alto - 20, "ESC VOLVER SIN GUARDAR", anchoCaracter8);
 
@@ -328,6 +313,7 @@ void MENU_OPCIONES(void)
 // ESTADISTICAS
 // -------------------------------------------------------
 
+// Muestra la tabla de puntajes máximos (hasta 5 entradas) ordenados de mayor a menor.
 void MENU_ESTADISTICAS(void)
 {
     tEstadistica stats[5];
@@ -341,9 +327,7 @@ void MENU_ESTADISTICAS(void)
 
         if (gbt_tecla_presionada(GBTK_ESCAPE) || gbt_tecla_sostenida(GBTK_ESCAPE)
             || gbt_tecla_presionada(GBTK_ENTER))
-        {
             return;
-        }
         if (gbt_tecla_sostenida(GBTK_q))
         {
             g_salir_juego = 1;
@@ -353,7 +337,7 @@ void MENU_ESTADISTICAS(void)
         gbt_borrar_backbuffer(COLOR_NEGRO);
         DIBUJARFONDO();
 
-        // Calcular ancho total de la tabla
+        // Diseño de tabla de dos columnas: NOMBRE y PUNTAJE
         int anchoNombre = 13 * anchoCaracter8;
         int anchoPuntaje = 7 * anchoCaracter8;
         int gapColumnas = 20;
@@ -361,7 +345,7 @@ void MENU_ESTADISTICAS(void)
         int colNombre = (ancho - anchoTabla) / 2;
         int colPuntaje = colNombre + anchoNombre + gapColumnas;
 
-        // Altura total del contenido: titulo + gap + headers + linea + gap + (max 5 filas) + gap + instruccion
+        // Altura total del contenido y centrado vertical
         int altoContenido = 8 + 10 + 8 + 8 + 6 + (cant > 0 ? cant * 14 : 8 + 20) + 10 + 8;
         int grupoY = (alto - altoContenido) / 2;
         if (grupoY < 10) grupoY = 10;
@@ -382,7 +366,7 @@ void MENU_ESTADISTICAS(void)
             gbt_dibujar_pixel(x, filaY, COLOR_GRIS_CLARO);
         filaY += 6;
 
-        // Datos
+        // Datos del ranking
         if (cant == 0)
         {
             int sinDatosX = (ancho - (int)strlen("SIN PARTIDAS REGISTRADAS") * anchoCaracter8) / 2;
@@ -394,14 +378,13 @@ void MENU_ESTADISTICAS(void)
             {
                 char puntajeStr[12];
                 sprintf(puntajeStr, "%d", stats[i].puntaje);
-
                 DIBUJARTEXTO(colNombre, filaY, stats[i].nombre, anchoCaracter8);
                 DIBUJARTEXTO(colPuntaje, filaY, puntajeStr, anchoCaracter8);
                 filaY += 14;
             }
         }
 
-        // Instrucción al fondo
+        // Instrucción al pie
         int instrX = (ancho - (int)strlen("ENTER O ESC PARA VOLVER") * anchoCaracter8) / 2;
         DIBUJARTEXTO(instrX, alto - 20, "ENTER O ESC PARA VOLVER", anchoCaracter8);
 
@@ -414,6 +397,7 @@ void MENU_ESTADISTICAS(void)
 // INSTRUCCIONES
 // -------------------------------------------------------
 
+// Muestra el objetivo del juego y la tabla de controles en dos columnas centradas.
 void MENU_INSTRUCCIONES(void)
 {
     while (1)
@@ -422,9 +406,7 @@ void MENU_INSTRUCCIONES(void)
 
         if (gbt_tecla_presionada(GBTK_ESCAPE) || gbt_tecla_sostenida(GBTK_ESCAPE)
             || gbt_tecla_presionada(GBTK_ENTER))
-        {
             return;
-        }
         if (gbt_tecla_sostenida(GBTK_q))
         {
             g_salir_juego = 1;
@@ -437,7 +419,7 @@ void MENU_INSTRUCCIONES(void)
         gbt_borrar_backbuffer(COLOR_NEGRO);
         DIBUJARFONDO();
 
-        // Secciones: objetivo (centrado individual) + controles (dos columnas)
+        // Datos: objetivo + controles en dos columnas
         const char *obj[] = { "OBJETIVO", "COMPLETAR FILAS SIN LLEGAR AL TOPE", "" };
         int num_obj = sizeof(obj) / sizeof(obj[0]);
 
@@ -448,21 +430,17 @@ void MENU_INSTRUCCIONES(void)
 
         const char *tit_ctrl = "CONTROLES";
 
-        int total_lineas = num_obj + 1 + filas; // obj + tit_ctrl + controles
-        int sep = (alto > 300) ? 12 : 6;
+        int total_lineas = num_obj + 1 + filas; // obj + título controles + filas
+        int sep = (alto > 300) ? 12 : 6; // separación entre líneas (CGA=6, VGA=12)
 
-        // Calcular posición horizontal de las dos columnas de controles
-        int max_tecla = 0;
+        // Calcula el ancho de cada columna para centrar todo horizontalmente
+        int max_tecla = 0, max_desc = 0;
         for (int i = 0; i < filas; i++)
         {
-            int len = (int)strlen(teclas[i]);
-            if (len > max_tecla) max_tecla = len;
-        }
-        int max_desc = 0;
-        for (int i = 0; i < filas; i++)
-        {
-            int len = (int)strlen(desc[i]);
-            if (len > max_desc) max_desc = len;
+            int lt = (int)strlen(teclas[i]);
+            int ld = (int)strlen(desc[i]);
+            if (lt > max_tecla) max_tecla = lt;
+            if (ld > max_desc) max_desc = ld;
         }
 
         int ancho_teclas = max_tecla * anchoCaracter8;
@@ -473,12 +451,12 @@ void MENU_INSTRUCCIONES(void)
         int col_tecla_x  = centro_cols;
         int col_desc_x   = centro_cols + ancho_teclas + gap;
 
-        // Posición vertical centrada
+        // Centrado vertical de todo el contenido
         int alto_texto = total_lineas * (altoCaracter + sep) - sep;
         int y_inicio = (alto - alto_texto) / 2;
         int y = y_inicio;
 
-        // Dibujar sección objetivo
+        // Sección OBJETIVO
         for (int i = 0; i < num_obj; i++)
         {
             if (obj[i][0] != '\0')
@@ -496,7 +474,7 @@ void MENU_INSTRUCCIONES(void)
         }
         y += altoCaracter + sep;
 
-        // Dibujar controles en dos columnas
+        // Tabla de controles (tecla | descripción)
         for (int i = 0; i < filas; i++)
         {
             DIBUJARTEXTO(col_tecla_x, y, (char*)teclas[i], anchoCaracter8);
@@ -504,7 +482,7 @@ void MENU_INSTRUCCIONES(void)
             y += altoCaracter + sep;
         }
 
-        // Leyenda fija en el fondo
+        // Leyenda fija al pie
         int instrX = (ancho - (int)strlen("ENTER O ESC PARA VOLVER") * anchoCaracter8) / 2;
         DIBUJARTEXTO(instrX, alto - 20, "ENTER O ESC PARA VOLVER", anchoCaracter8);
 
@@ -512,10 +490,13 @@ void MENU_INSTRUCCIONES(void)
         gbt_esperar(16);
     }
 }
+
 // -------------------------------------------------------
-// MENU PAUSA (con navegación por flechas y Enter)
+// MENU PAUSA
 // -------------------------------------------------------
 
+// Menú de pausa superpuesto al juego: CONTINUAR, GUARDAR Y SALIR AL MENU, SALIR SIN GUARDAR.
+// Flechas para navegar, Enter para seleccionar, ESC/P para continuar.
 ePausaResultado MENU_PAUSA(void)
 {
     const char *opciones[] = {
@@ -533,7 +514,7 @@ ePausaResultado MENU_PAUSA(void)
         int centroX = ancho / 2;
         int centroY = alto  / 2;
 
-        // Caja: ancho suficiente para la opción más larga
+        // Tamaño de la caja de pausa (suficiente para la opción más larga)
         int anchoCaja = (int)strlen("SALIR AL MENU SIN GUARDAR") * anchoCaracter8 + 72;
         int altoCaja  = 16 + CANT_OPCIONES * 16 + 8;
         int x0 = centroX - anchoCaja / 2;
@@ -546,26 +527,23 @@ ePausaResultado MENU_PAUSA(void)
         if (gbt_tecla_presionada(GBTK_ABAJO))
             seleccion = (seleccion + 1) % CANT_OPCIONES;
 
+        // Enter confirma selección; P/ESC también continúa
         if (gbt_tecla_presionada(GBTK_ENTER) || gbt_tecla_presionada(GBTK_p))
         {
             if (seleccion == 0) return PAUSA_RESULTADO_CONTINUAR;
             if (seleccion == 1) return PAUSA_RESULTADO_GUARDAR_Y_SALIR;
             if (seleccion == 2) return PAUSA_RESULTADO_SALIR_SIN_GUARDAR;
         }
-
-        // P también continúa (tecla de pausa original)
         if (gbt_tecla_presionada(GBTK_ESCAPE))
             return PAUSA_RESULTADO_CONTINUAR;
 
-        // Dibujar el juego de fondo + el panel de pausa encima
+        // Dibuja el juego de fondo y el panel de pausa encima
         DIBUJAR();
         DIBUJARMARCOGENERICO(x0, y0, anchoCaja, altoCaja, 0);
 
-        // Título
         char *titulo = "PAUSA";
         DIBUJARTEXTO(centroX - ((int)strlen(titulo) * anchoCaracter8) / 2, y0 + 4, titulo, anchoCaracter8);
 
-        // Opciones
         for (int i = 0; i < CANT_OPCIONES; i++)
         {
             int opY = y0 + 16 + i * 16;

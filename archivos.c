@@ -8,8 +8,9 @@ extern int bolsaIndice;
 
 int PARTIDA_EXISTE(void)
 {
+    // Abre partida.dat en modo lectura binaria
     FILE *f = fopen(NOMBRE_ARCHIVO_PARTIDA, "rb");
-    if (!f) return 0;
+    if (!f) return 0; // No existe el archivo
 
     sEstadoPartida estado;
     int leidos = (int)fread(&estado, sizeof(sEstadoPartida), 1, f);
@@ -22,8 +23,8 @@ int PARTIDA_GUARDAR(void)
 {
     sEstadoPartida estado;
 
-    // Copiar estado del tablero
-    for (int f = 0; f < filasTablero; f++)
+    // Copia cada celda del tablero (todas las filas físicas, incluidas las invisibles)
+    for (int f = 0; f < FILAS_TOTALES; f++)
         for (int c = 0; c < columnasTablero; c++)
             estado.tablero[f][c] = tablero[f][c];
 
@@ -37,7 +38,7 @@ int PARTIDA_GUARDAR(void)
     strncpy(estado.nombreJugador, nombreJugador, 21);
     estado.nombreJugador[20] = '\0';
 
-    // Guardar el sistema de bolsa
+    // Guarda el estado de la bolsa de piezas (7 clásico / 11 DX)
     for (int i = 0; i < piezas_en_uso; i++)
         estado.bolsa[i] = bolsa[i];
     estado.bolsaIndice = bolsaIndice;
@@ -48,7 +49,7 @@ int PARTIDA_GUARDAR(void)
     estado.modo_juego = config_actual.modo_juego;
 
     FILE *f = fopen(NOMBRE_ARCHIVO_PARTIDA, "wb");
-    if (!f) return -1;
+    if (!f) return -1; // No se pudo crear el archivo
 
     int ok = (int)fwrite(&estado, sizeof(sEstadoPartida), 1, f);
     fclose(f);
@@ -66,13 +67,13 @@ int PARTIDA_CARGAR(void)
 
     if (leidos != 1 || estado.valido != 1) return -1;
 
-    // Inicializar punteros del tablero (necesario para el tablero dinámico)
-    for (int fi = 0; fi < filasTablero; fi++)
+    // Inicializa punteros del tablero dinámico (filas_tablero apunta a celdas_tablero)
+    for (int fi = 0; fi < FILAS_TOTALES; fi++)
         filas_tablero[fi] = celdas_tablero[fi];
     tablero = filas_tablero;
 
-    // Restaurar estado del tablero
-    for (int fi = 0; fi < filasTablero; fi++)
+    // Restaura cada celda del tablero (todas las filas, incluidas las invisibles)
+    for (int fi = 0; fi < FILAS_TOTALES; fi++)
         for (int c = 0; c < columnasTablero; c++)
             tablero[fi][c] = estado.tablero[fi][c];
 
@@ -86,7 +87,7 @@ int PARTIDA_CARGAR(void)
     strncpy(nombreJugador, estado.nombreJugador, 21);
     nombreJugador[20] = '\0';
 
-    // Restaurar bolsa
+    // Restaura la bolsa, validando la cantidad de piezas
     int piezas_guardadas = estado.cantidad_piezas;
     if (piezas_guardadas < 7 || piezas_guardadas > MAX_PIEZAS)
         piezas_guardadas = piezas_en_uso;
@@ -94,24 +95,24 @@ int PARTIDA_CARGAR(void)
         bolsa[i] = estado.bolsa[i];
     bolsaIndice = estado.bolsaIndice;
 
-    // Restaurar la cantidad de piezas activas al momento de guardar
+    // Actualiza la cantidad de piezas activas según la partida guardada
     piezas_en_uso = piezas_guardadas;
 
-    // Restaurar ancho del tablero
+    // Restaura el ancho guardado (solo si está en rango válido)
     if (estado.ancho_tablero >= 8 && estado.ancho_tablero <= MAX_COLUMNAS)
         columnasTablero = estado.ancho_tablero;
 
-    // Restaurar modo de juego para mantener circularidad del tablero
+    // Restaura el modo de juego guardado para mantener circularidad del tablero
     if (estado.modo_juego == MODO_CLASICO || estado.modo_juego == MODO_DX)
         config_actual.modo_juego = estado.modo_juego;
 
-    estado_juego = ESTADO_RUNNING;
+    estado_juego = ESTADO_RUNNING; // Marca el estado como en ejecución
     return 0;
 }
 
 void PARTIDA_BORRAR(void)
 {
-    // Sobrescribir con valido=0 para marcarla como inválida
+    // Sobrescribe el archivo con una estructura en cero (valido=0)
     sEstadoPartida estado = {0};
     FILE *f = fopen(NOMBRE_ARCHIVO_PARTIDA, "wb");
     if (f)

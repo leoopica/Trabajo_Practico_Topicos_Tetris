@@ -3,10 +3,12 @@
 
 #include "sprites.h"
 
-#define filasTablero 20 // Define cantidad de filasTablero del tablero
-#define MAX_COLUMNAS 16 // Máximo de columnas del tablero
+#define filasTablero 20      // Filas VISIBLES del tablero
+#define FILAS_INVISIBLES 4   // Filas ocultas arriba (para spawn de piezas)
+#define FILAS_TOTALES (filasTablero + FILAS_INVISIBLES) // 24 filas físicas
+#define MAX_COLUMNAS 16
 #define MAX_FILAS_BORRAR 4
-extern int columnasTablero; // Ancho real del tablero (8-16, variable)
+extern int columnasTablero;
 
 // Estructura para las piezas
 typedef struct
@@ -28,8 +30,8 @@ typedef enum {
 // Variables globales - extern permite que se compartan las variables globales entre archivos
 // tablero se implementa como array de punteros a filas (requisito de promoción):
 // filas_tablero[f] es un puntero a la f-ésima fila; tablero[f][c] accede a la celda normal.
-extern int *filas_tablero[filasTablero]; // Array de punteros (uno por fila)
-extern int celdas_tablero[filasTablero][MAX_COLUMNAS]; // Memoria real
+extern int *filas_tablero[FILAS_TOTALES]; // Array de punteros (uno por fila física)
+extern int celdas_tablero[FILAS_TOTALES][MAX_COLUMNAS]; // Memoria real
 extern int **tablero; // Puntero al array de punteros (acceso como tablero[f][c])
 extern sPieza actual;
 extern sPieza proxima;
