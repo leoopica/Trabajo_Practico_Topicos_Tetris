@@ -2,31 +2,34 @@
 #include <stdio.h>
 #include <string.h>
 
-#define NOMBRE_ARCHIVO_STATS "estadisticas.dat"
+#define NOMBRE_ARCHIVO_STATS "estadisticas.dat" // Nombre del archivo donde se guardan estadísticas
 
-void STATS_GUARDAR(const char *nombre, int puntaje)
+// Guarda un nuevo puntaje en el ranking
+void STATS_GUARDAR (const char *nombre, int puntaje)
 {
-    tEstadistica stats [MAX_STATS];
-    int cant = STATS_CARGAR (stats, MAX_STATS); // Carga estadísticas existentes del archivo
-    int indiceMinimo = 0;
+    tEstadistica stats [MAX_STATS], tmp;
+    int cant, indiceMinimo = 0, i, j;
+    FILE *f;
 
-    if (cant < MAX_STATS)
+    cant = STATS_CARGAR (stats, MAX_STATS); // Carga estadísticas existentes del archivo. 
+
+    if (cant < MAX_STATS) // Si hay espacio libre en el ranking, agrega la nueva entrada al final del array. Si está completo, busca la entrada con el puntaje más bajo
     {
-        // Hay espacio libre: agrega la entrada al final del array
-        strncpy (stats[cant].nombre, nombre, MAX_NOMBRE_STAT - 1);
+        strncpy (stats[cant].nombre, nombre, MAX_NOMBRE_STAT - 1); // Copia nombre
         stats [cant].nombre [MAX_NOMBRE_STAT - 1] = '\0';
         stats [cant].puntaje = puntaje;
         cant ++;
     }
     else
     {
-        // Ranking lleno: busca la entrada de menor puntaje
-        for (int i = 1; i < cant; i++)
-            if (stats [i].puntaje < stats[indiceMinimo].puntaje)
+        for (i = 1; i < cant; i++)
+            if (stats [i].puntaje < stats [indiceMinimo].puntaje)
+            {
                 indiceMinimo = i;
+            }
 
-        // Solo reemplaza si el nuevo puntaje supera al mínimo actual
-        if (puntaje > stats [indiceMinimo].puntaje)
+        
+        if (puntaje > stats [indiceMinimo].puntaje) // Si el nuevo puntaje supera al mínimo actual, lo reemplaza 
         {
             strncpy (stats [indiceMinimo].nombre, nombre, MAX_NOMBRE_STAT - 1);
             stats [indiceMinimo].nombre[MAX_NOMBRE_STAT - 1] = '\0';
@@ -34,30 +37,39 @@ void STATS_GUARDAR(const char *nombre, int puntaje)
         }
     }
 
-    // Ordena el array de mayor a menor puntaje (burbujeo)
-    for (int i = 0; i < cant - 1; i++)
-        for (int j = 0; j < cant - 1 - i; j++)
-            if (stats[j].puntaje < stats[j + 1].puntaje)
+    // Ordena el array de mayor a menor puntaje
+    for (i = 0; i < cant - 1; i++)
+        for (j = 0; j < cant - 1 - i; j++)
+            if (stats [j].puntaje < stats [j + 1].puntaje)
             {
-                tEstadistica tmp = stats[j];
-                stats[j] = stats[j + 1];
-                stats[j + 1] = tmp;
+                tmp = stats [j];
+                stats [j] = stats [j + 1];
+                stats [j + 1] = tmp;
             }
 
     // Sobrescribe el archivo con el ranking actualizado
-    FILE *f = fopen(NOMBRE_ARCHIVO_STATS, "wb");
-    if (!f) return;
-    fwrite(stats, sizeof(tEstadistica), cant, f);
+    f = fopen(NOMBRE_ARCHIVO_STATS, "wb");
+    if (!f)
+    {
+        return;
+    }
+    fwrite (stats, sizeof (tEstadistica), cant, f);
     fclose(f);
 }
 
-int STATS_CARGAR(tEstadistica *stats, int cant)
+// Carga las estadísticas desde el archivo estadisticas.dat
+int STATS_CARGAR (tEstadistica *stats, int cant)
 {
-    // Abre el archivo en lectura binaria; si no existe (primera vez), retorna 0
-    FILE *f = fopen(NOMBRE_ARCHIVO_STATS, "rb");
-    if (!f) return 0;
+    FILE *f;
+    int leidos;
 
-    int leidos = (int)fread(stats, sizeof(tEstadistica), cant, f);
+    f = fopen(NOMBRE_ARCHIVO_STATS, "rb");
+    if (!f)
+    {
+        return 0;
+    }
+
+    leidos = (int) fread (stats, sizeof (tEstadistica), cant, f);
     fclose(f);
-    return leidos; // Retorna la cantidad de entradas leídas
+    return leidos;
 }
