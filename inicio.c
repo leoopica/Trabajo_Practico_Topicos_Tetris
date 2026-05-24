@@ -53,7 +53,7 @@ const char* sprite_tetris_ascii[LOGO_TEXTO_ALTO] = {
     "  TTTM   EEMMMM     222M   RRMRRMM  IIIM  MMMMSSM",
     "  TTTM   EEM        222M   RRM RR   IIIM      SSM",
     "  TTTM   EEEEEEE    222M   RRM  RR  IIIM SSSSSSSM",
-    "  TTTM   EEEEEM     222M   RRM  RRM IIIM SSSSSSSM",
+    "  TTTM   EEEEEEEM   222M   RRM  RRM IIIM SSSSSSSM",
     "   MMM    MMMMMMM    MMM    MM   MM  MMM  MMMMMMM",
     "                                                 "
 };
