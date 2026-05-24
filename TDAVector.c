@@ -3,10 +3,13 @@
 #include <string.h>
 #include "gbt_vector.h"
 
-/* Crea un vector dinamico para elementos de tamano tamElem */
+// Crea un vector dinámico con capacidad inicial para 10 elementos
 uint8_t gbt_vector_crear (tGBT_Vector *v, size_t tamElem)
 {
-    if (!v) { return GBT_VECTOR_SIN_MEM; }
+    if (!v)
+    {
+        return GBT_VECTOR_SIN_MEM;
+    }
 
     v->vec = malloc (10 * tamElem);
     if (!v->vec)
@@ -20,33 +23,46 @@ uint8_t gbt_vector_crear (tGBT_Vector *v, size_t tamElem)
     return GBT_VECTOR_TODO_OK;
 }
 
-/* Vacia el vector (no libera memoria) */
+// Vacía el vector (ce = 0, no libera memoria)
 void gbt_vector_vaciar (tGBT_Vector *v)
 {
-    if (v) { v->ce = 0; }
+    if (v)
+    {
+        v->ce = 0;
+    }
 }
 
-/* Destruye el vector y libera memoria */
+// Destruye el vector y libera la memoria
 void gbt_vector_destruir (tGBT_Vector *v)
 {
-    if (!v) { return; }
+    if (!v)
+    {
+        return;
+    }
+
     free (v->vec);
     v->vec = NULL;
     v->ce = 0;
     v->cap = 0;
 }
 
-/* Carga datos desde un archivo binario */
+// Carga datos desde un archivo binario al vector
 uint8_t gbt_vector_cargar_de_archivo (tGBT_Vector *v, const char *nombreArch, size_t tamElem)
 {
     FILE *f;
     void *buff;
     size_t leidos;
 
-    if (!v || !nombreArch) { return GBT_VECTOR_ERR_ARCH; }
+    if (!v || !nombreArch)
+    {
+        return GBT_VECTOR_ERR_ARCH;
+    }
 
     f = fopen (nombreArch, "rb");
-    if (!f) { return GBT_VECTOR_ERR_ARCH; }
+    if (!f)
+    {
+        return GBT_VECTOR_ERR_ARCH;
+    }
 
     buff = malloc (tamElem);
     if (!buff)
@@ -70,102 +86,113 @@ uint8_t gbt_vector_cargar_de_archivo (tGBT_Vector *v, const char *nombreArch, si
     return GBT_VECTOR_TODO_OK;
 }
 
-/* Recorre el vector ejecutando una accion por cada elemento */
+// Recorre el vector ejecutando una función por cada elemento
 void gbt_vector_recorrer (tGBT_Vector *v, tGBT_Accion accion, void *extra)
 {
-    size_t i;
+    int32_t i;
 
-    if (!v || !accion) { return; }
+    if (!v || !accion)
+    {
+        return;
+    }
 
-    for (i = 0; i < v->ce; i++)
+    for (i = 0; i < v->ce; i ++)
     {
         accion ((char*)v->vec + i * v->tamElem, extra);
     }
 }
 
-/* Ordena el vector usando el metodo especificado y la funcion de comparacion */
+// Ordena el vector usando el método especificado (burbujeo, selección o inserción)
 void gbt_vector_ordenar (tGBT_Vector *v, eGBT_Ordenamiento metodo, tGBT_Cmp cmp)
 {
-    size_t i;
-    size_t j;
-    size_t min_idx;
+    int32_t i, j, min_idx;
     void *tmp;
 
-    if (!v || !cmp || v->ce <= 1) { return; }
+    if (!v || !cmp || v->ce <= 1)
+    {
+        return;
+    }
 
     tmp = malloc (v->tamElem);
-    if (!tmp) { return; }
-
-    switch (metodo)
+    if (!tmp)
     {
-        case GBT_BURBUJEO:
-            for (i = 0; i < v->ce - 1; i++)
-            {
-                for (j = 0; j < v->ce - 1 - i; j++)
-                {
-                    void *e1 = (char*)v->vec + j * v->tamElem;
-                    void *e2 = (char*)v->vec + (j + 1) * v->tamElem;
+        return;
+    }
 
-                    if (cmp (e1, e2) > 0)
-                    {
-                        memcpy (tmp, e1, v->tamElem);
-                        memcpy (e1, e2, v->tamElem);
-                        memcpy (e2, tmp, v->tamElem);
-                    }
+    if (metodo == GBT_BURBUJEO)
+    {
+        for (i = 0; i < v->ce - 1; i ++)
+        {
+            for (j = 0; j < v->ce - 1 - i; j ++)
+            {
+                void *e1 = (char*)v->vec + j * v->tamElem;
+                void *e2 = (char*)v->vec + (j + 1) * v->tamElem;
+
+                if (cmp (e1, e2) > 0)
+                {
+                    memcpy (tmp, e1, v->tamElem);
+                    memcpy (e1, e2, v->tamElem);
+                    memcpy (e2, tmp, v->tamElem);
                 }
             }
-            break;
-
-        case GBT_SELECCION:
-            for (i = 0; i < v->ce - 1; i++)
+        }
+    }
+    else if (metodo == GBT_SELECCION)
+    {
+        for (i = 0; i < v->ce - 1; i ++)
+        {
+            min_idx = i;
+            for (j = i + 1; j < v->ce; j ++)
             {
-                min_idx = i;
-                for (j = i + 1; j < v->ce; j++)
+                void *e_act = (char*)v->vec + j * v->tamElem;
+                void *e_min = (char*)v->vec + min_idx * v->tamElem;
+                if (cmp (e_act, e_min) < 0)
                 {
-                    void *e_act = (char*)v->vec + j * v->tamElem;
-                    void *e_min = (char*)v->vec + min_idx * v->tamElem;
-                    if (cmp (e_act, e_min) < 0)
-                    {
-                        min_idx = j;
-                    }
-                }
-                if (min_idx != i)
-                {
-                    void *ei = (char*)v->vec + i * v->tamElem;
-                    void *emin = (char*)v->vec + min_idx * v->tamElem;
-                    memcpy (tmp, ei, v->tamElem);
-                    memcpy (ei, emin, v->tamElem);
-                    memcpy (emin, tmp, v->tamElem);
+                    min_idx = j;
                 }
             }
-            break;
 
-        case GBT_INSERCION:
-            for (i = 1; i < v->ce; i++)
+            if (min_idx != i)
             {
-                memcpy (tmp, (char*)v->vec + i * v->tamElem, v->tamElem);
-                j = i;
-                while (j > 0 && cmp ((char*)v->vec + (j - 1) * v->tamElem, tmp) > 0)
-                {
-                    memcpy ((char*)v->vec + j * v->tamElem, (char*)v->vec + (j - 1) * v->tamElem, v->tamElem);
-                    j--;
-                }
-                memcpy ((char*)v->vec + j * v->tamElem, tmp, v->tamElem);
+                void *ei = (char*)v->vec + i * v->tamElem;
+                void *emin = (char*)v->vec + min_idx * v->tamElem;
+                memcpy (tmp, ei, v->tamElem);
+                memcpy (ei, emin, v->tamElem);
+                memcpy (emin, tmp, v->tamElem);
             }
-            break;
+        }
+    }
+    else if (metodo == GBT_INSERCION)
+    {
+        for (i = 1; i < v->ce; i ++)
+        {
+            memcpy (tmp, (char*)v->vec + i * v->tamElem, v->tamElem);
+            j = i;
+
+            while (j > 0 && cmp ((char*)v->vec + (j - 1) * v->tamElem, tmp) > 0)
+            {
+                memcpy ((char*)v->vec + j * v->tamElem, (char*)v->vec + (j - 1) * v->tamElem, v->tamElem);
+                j --;
+            }
+
+            memcpy ((char*)v->vec + j * v->tamElem, tmp, v->tamElem);
+        }
     }
 
     free (tmp);
 }
 
-/* Busqueda secuencial en vector ordenado */
+// Búsqueda secuencial en vector ordenado, retorna índice o -1
 int32_t gbt_vector_ord_buscar (const tGBT_Vector *v, void *elem, tGBT_Cmp cmp)
 {
-    size_t i;
+    int32_t i;
 
-    if (!v || !cmp) { return -1; }
+    if (!v || !cmp)
+    {
+        return -1;
+    }
 
-    for (i = 0; i < v->ce; i++)
+    for (i = 0; i < v->ce; i ++)
     {
         if (cmp ((char*)v->vec + i * v->tamElem, elem) == 0)
         {
@@ -176,14 +203,16 @@ int32_t gbt_vector_ord_buscar (const tGBT_Vector *v, void *elem, tGBT_Cmp cmp)
     return -1;
 }
 
-/* Busqueda binaria en vector ordenado */
+// Búsqueda binaria en vector ordenado, retorna índice o -1
 int32_t gbt_vector_ord_buscar_binaria (const tGBT_Vector *v, void *elem, tGBT_Cmp cmp)
 {
-    int32_t inicio;
-    int32_t fin;
-    int32_t medio;
+    int32_t inicio, fin, medio;
+    int res;
 
-    if (!v || !cmp || v->ce == 0) { return -1; }
+    if (!v || !cmp || v->ce == 0)
+    {
+        return -1;
+    }
 
     inicio = 0;
     fin = (int32_t)v->ce - 1;
@@ -191,30 +220,44 @@ int32_t gbt_vector_ord_buscar_binaria (const tGBT_Vector *v, void *elem, tGBT_Cm
     while (inicio <= fin)
     {
         medio = (inicio + fin) / 2;
-        int res = cmp ((char*)v->vec + medio * v->tamElem, elem);
+        res = cmp ((char*)v->vec + medio * v->tamElem, elem);
 
-        if (res == 0) { return medio; }
-        if (res < 0) { inicio = medio + 1; }
-        else { fin = medio - 1; }
+        if (res == 0)
+        {
+            return medio;
+        }
+
+        if (res < 0)
+        {
+            inicio = medio + 1;
+        }
+        else
+        {
+            fin = medio - 1;
+        }
     }
 
     return -1;
 }
 
-/* Inserta un elemento en orden en el vector */
+// Inserta un elemento ordenadamente; si existe, llama a actualizar()
 uint8_t gbt_vector_ord_insertar (tGBT_Vector *v, void *elem, tGBT_Cmp cmp, tGBT_Actualizar actualizar)
 {
-    size_t i;
-    size_t pos;
-    void *dest;
+    int32_t i, pos;
+    size_t nueva_cap;
+    void *dest, *nuevo_vec;
+    int res;
 
-    if (!v || !cmp) { return GBT_VECTOR_ERR_TAM; }
-
-    /* Buscar posicion de insercion */
-    pos = v->ce;
-    for (i = 0; i < v->ce; i++)
+    if (!v || !cmp)
     {
-        int res = cmp ((char*)v->vec + i * v->tamElem, elem);
+        return GBT_VECTOR_ERR_TAM;
+    }
+
+    pos = v->ce;
+    for (i = 0; i < v->ce && pos == v->ce; i ++)
+    {
+        res = cmp ((char*)v->vec + i * v->tamElem, elem);
+
         if (res == 0)
         {
             if (actualizar)
@@ -223,67 +266,101 @@ uint8_t gbt_vector_ord_insertar (tGBT_Vector *v, void *elem, tGBT_Cmp cmp, tGBT_
             }
             return GBT_VECTOR_DUPLICADO;
         }
+
         if (res > 0)
         {
             pos = i;
-            break;
         }
     }
 
-    /* Redimensionar si es necesario */
-    if (v->ce >= v->cap)
+    if ((size_t)v->ce >= v->cap)
     {
-        size_t nueva_cap = v->cap ? v->cap * 2 : 10;
-        void *nuevo_vec = realloc (v->vec, nueva_cap * v->tamElem);
+        if (v->cap)
+        {
+            nueva_cap = v->cap * 2;
+        }
+        else
+        {
+            nueva_cap = 10;
+        }
 
-        if (!nuevo_vec) { return GBT_VECTOR_SIN_MEM; }
+        nuevo_vec = realloc (v->vec, nueva_cap * v->tamElem);
+
+        if (!nuevo_vec)
+        {
+            return GBT_VECTOR_SIN_MEM;
+        }
+
         v->vec = nuevo_vec;
         v->cap = nueva_cap;
     }
 
-    /* Desplazar elementos */
     dest = (char*)v->vec + (pos + 1) * v->tamElem;
     memmove (dest, (char*)v->vec + pos * v->tamElem, (v->ce - pos) * v->tamElem);
 
-    /* Insertar */
     memcpy ((char*)v->vec + pos * v->tamElem, elem, v->tamElem);
-    v->ce++;
+    v->ce ++;
 
     return GBT_VECTOR_TODO_OK;
 }
 
-/* Inserta un elemento al final del vector */
+// Inserta un elemento al final del vector, redimensiona si es necesario
 uint8_t gbt_vector_insertar_al_final (tGBT_Vector *v, void *elem)
 {
-    if (!v) { return GBT_VECTOR_ERR_TAM; }
+    size_t nueva_cap;
+    void *nuevo_vec;
 
-    if (v->ce >= v->cap)
+    if (!v)
     {
-        size_t nueva_cap = v->cap ? v->cap * 2 : 10;
-        void *nuevo_vec = realloc (v->vec, nueva_cap * v->tamElem);
+        return GBT_VECTOR_ERR_TAM;
+    }
 
-        if (!nuevo_vec) { return GBT_VECTOR_SIN_MEM; }
+    if ((size_t)v->ce >= v->cap)
+    {
+        if (v->cap)
+        {
+            nueva_cap = v->cap * 2;
+        }
+        else
+        {
+            nueva_cap = 10;
+        }
+
+        nuevo_vec = realloc (v->vec, nueva_cap * v->tamElem);
+
+        if (!nuevo_vec)
+        {
+            return GBT_VECTOR_SIN_MEM;
+        }
+
         v->vec = nuevo_vec;
         v->cap = nueva_cap;
     }
 
     memcpy ((char*)v->vec + v->ce * v->tamElem, elem, v->tamElem);
-    v->ce++;
+    v->ce ++;
 
     return GBT_VECTOR_TODO_OK;
 }
 
-/* Retorna la cantidad de elementos almacenados */
+// Retorna la cantidad de elementos almacenados en el vector
 size_t gbt_vector_obtener_cantidad_elem (const tGBT_Vector *v)
 {
-    if (!v) { return 0; }
+    if (!v)
+    {
+        return 0;
+    }
+
     return v->ce;
 }
 
-/* Crea un iterador para el vector */
+// Crea un iterador para recorrer el vector
 void gbt_vector_it_crear (tGBT_VectorIterador *it, tGBT_Vector *v)
 {
-    if (!it || !v) { return; }
+    if (!it || !v)
+    {
+        return;
+    }
 
     it->v = v;
     it->tamElem = v->tamElem;
@@ -291,29 +368,42 @@ void gbt_vector_it_crear (tGBT_VectorIterador *it, tGBT_Vector *v)
     it->ult = (char*)v->vec + v->ce * v->tamElem;
 }
 
-/* Retorna puntero al primer elemento y avanza el iterador */
+// Retorna puntero al primer elemento y resetea el iterador
 void *gbt_vector_it_primero (tGBT_VectorIterador *it)
 {
-    if (!it || !it->v || it->v->ce == 0) { return NULL; }
+    if (!it || !it->v || it->v->ce == 0)
+    {
+        return NULL;
+    }
 
     it->act = it->v->vec;
     return it->act;
 }
 
-/* Retorna puntero al siguiente elemento y avanza */
+// Retorna puntero al siguiente elemento y avanza el iterador
 void *gbt_vector_it_siguiente (tGBT_VectorIterador *it)
 {
-    if (!it || !it->v) { return NULL; }
+    if (!it || !it->v)
+    {
+        return NULL;
+    }
 
     it->act = (char*)it->act + it->tamElem;
-    if (it->act >= it->ult) { return NULL; }
+    if (it->act >= it->ult)
+    {
+        return NULL;
+    }
 
     return it->act;
 }
 
-/* Verifica si el iterador llego al final */
+// Verifica si el iterador llegó al final (1 = terminó)
 uint8_t gbt_vector_it_es_fin (tGBT_VectorIterador *it)
 {
-    if (!it || !it->v) { return 1; }
+    if (!it || !it->v)
+    {
+        return 1;
+    }
+
     return (it->act >= it->ult);
 }
