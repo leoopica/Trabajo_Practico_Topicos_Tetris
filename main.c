@@ -465,7 +465,6 @@ int main (int argc, char *argv [])
     }
 
     CONFIG_APLICAR (&config_actual);
-    GENERAR_FUENTE_PROPORCIONAL ();
     srand (time (0));
 
     PANTALLA_PRESENTACION ();
