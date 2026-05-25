@@ -12,8 +12,9 @@ Para compilar este proyecto, necesitarás las siguientes herramientas instaladas
 
 1.  **Code::Blocks (con MinGW):** Se recomienda descargar la versión que incluye el compilador (ej. `codeblocks-20.03mingw-setup.exe`).
     *   [Descargar Code::Blocks](http://www.codeblocks.org/downloads/binaries/)
-2.  **GBT (Graphics Basic Toolkit):** La biblioteca para manejo de gráficos, entrada y temporizadores ya viene incluida en la raíz del proyecto.
-    *   Verifica la presencia de `libgbt.a`, `gbt.dll` y los archivos `.h` (ej. `gbt.h`) en la carpeta raíz.
+2.  **GBT (Graphics Basic Toolkit):** 
+    *   Descargar la librería desde: [GitLab GBT](https://gitlab.com/RodrigoMaranzana/libgbt-dist/-/archive/main/libgbt-dist-main.zip?ref_type=heads&path=release/GBT_v2026.1C.01)
+    *   **Instrucciones:** Extraer el archivo descargado y copiar **todos** los archivos que se encuentran dentro de las carpetas de la librería (`gbt.h`, `libgbt.a`, `gbt.dll`, etc.) directamente en el **directorio raíz** de este proyecto.
 
 ---
 
@@ -63,7 +64,6 @@ Para que el juego funcione, el archivo `gbt.dll` **debe** estar en la misma carp
 *   **Flechas Izquierda/Derecha:** Mover la pieza.
 *   **Flecha Arriba:** Rotar la pieza.
 *   **Flecha Abajo:** Caída suave (acelerar).
-*   **Espacio:** Caída instantánea (Hard Drop).
 *   **P:** Pausar el juego.
 *   **Enter:** Confirmar en menús / Iniciar juego.
 *   **Q / Esc:** Salir del juego.
